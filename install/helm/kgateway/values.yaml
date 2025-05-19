@@ -84,3 +84,6 @@ inferenceExtension:
 # - matchLabels:
 #     version: v3
 discoveryNamespaceSelectors: []
+
+agentGateway:
+  enabled: false

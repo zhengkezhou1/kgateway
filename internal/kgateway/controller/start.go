@@ -19,6 +19,7 @@ import (
 	metricsserver "sigs.k8s.io/controller-runtime/pkg/metrics/server"
 	infextv1a2 "sigs.k8s.io/gateway-api-inference-extension/api/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/agentgatewaysyncer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/inferenceextension/endpointpicker"
@@ -191,6 +192,23 @@ func NewControllerBuilder(ctx context.Context, cfg StartConfig) (*ControllerBuil
 	)
 	proxySyncer.Init(ctx, cfg.KrtOptions)
 
+	if cfg.SetupOpts.GlobalSettings.EnableAgentGateway {
+		agentGatewaySyncer := agentgatewaysyncer.NewAgentGwSyncer(
+			ctx,
+			cfg.ControllerName,
+			mgr,
+			cfg.Client,
+			commoncol,
+			cfg.SetupOpts.Cache,
+		)
+		agentGatewaySyncer.Init(cfg.KrtOptions)
+
+		if err := mgr.Add(agentGatewaySyncer); err != nil {
+			setupLog.Error(err, "unable to add agentGatewaySyncer runnable")
+			return nil, err
+		}
+	}
+
 	if err := mgr.Add(proxySyncer); err != nil {
 		setupLog.Error(err, "unable to add proxySyncer runnable")
 		return nil, err
@@ -264,7 +282,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 	}
 
 	setupLog.Info("creating gateway class provisioner")
-	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName, GetDefaultClassInfo()); err != nil {
+	if err := NewGatewayClassProvisioner(c.mgr, c.cfg.ControllerName, GetDefaultClassInfo(globalSettings)); err != nil {
 		setupLog.Error(err, "unable to create gateway class provisioner")
 		return err
 	}
@@ -295,7 +313,7 @@ func (c *ControllerBuilder) Start(ctx context.Context) error {
 	}
 
 	// mgr WaitForCacheSync is part of proxySyncer's HasSynced
-	// so we can can mark ready here before we call mgr.Start
+	// so we can mark ready here before we call mgr.Start
 	c.ready.Store(true)
 
 	setupLog.Info("starting manager")
@@ -308,8 +326,8 @@ func (c *ControllerBuilder) HasSynced() bool {
 
 // GetDefaultClassInfo returns the default GatewayClass for the kgateway controller.
 // Exported for testing.
-func GetDefaultClassInfo() map[string]*ClassInfo {
-	return map[string]*ClassInfo{
+func GetDefaultClassInfo(globalSettings *settings.Settings) map[string]*ClassInfo {
+	classInfos := map[string]*ClassInfo{
 		wellknown.GatewayClassName: {
 			Description: "Standard class for managing Gateway API ingress traffic.",
 			Labels:      map[string]string{},
@@ -323,4 +341,13 @@ func GetDefaultClassInfo() map[string]*ClassInfo {
 			},
 		},
 	}
+	// Only enable agentgateway gateway class if it's enabled in the settings
+	if globalSettings.EnableAgentGateway {
+		classInfos[wellknown.AgentGatewayClassName] = &ClassInfo{
+			Description: "Specialized class for agentgateway.",
+			Labels:      map[string]string{},
+			Annotations: map[string]string{},
+		}
+	}
+	return classInfos
 }

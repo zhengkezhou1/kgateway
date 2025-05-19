@@ -55,7 +55,11 @@ jobs:
           go-test-args: '-v -timeout=5m'
           go-test-run-regex: '^TestMultipleInstalls'
           localstack: 'false'
-
+        # May 19, 2025: ~10 minutes
+        - cluster-name: 'agent-gateway-cluster'
+          go-test-args: '-v -timeout=25m'
+          go-test-run-regex: '^TestAgentGatewayIntegration'
+          agentgateway: 'true'
 
 #         # Dec 4, 2024: 23 minutes
 #         - cluster-name: 'cluster-two'
@@ -114,6 +118,7 @@ jobs:
         helm-version: ${{ steps.dotenv.outputs.helm_version }}
         istio-version: ${{ steps.dotenv.outputs.istio_version }}
         localstack: ${{ matrix.test.localstack }}
+        agentgateway: ${{ matrix.test.agentgateway }}
     - id: run-tests
       uses: ./.github/actions/kubernetes-e2e-tests
       with:

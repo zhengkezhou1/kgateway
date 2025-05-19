@@ -26,7 +26,6 @@ import (
 // registertypes for common collections
 
 func registerTypes(ourCli versioned.Interface) {
-	// if it is a sig gateway api then it can pull directly from the kubeclientgetter
 	kubeclient.Register[*gwv1.HTTPRoute](
 		gvr.HTTPRoute_v1,
 		gvk.HTTPRoute_v1.Kubernetes(),
@@ -105,8 +104,8 @@ func InitCollections(
 	backendIndex := NewBackendIndex(krtopts, policies, refgrants)
 	initBackends(plugins, backendIndex)
 	endpointIRs := initEndpoints(plugins, krtopts)
-	gateways := NewGatewayIndex(krtopts, controllerName, policies, kubeRawGateways, gatewayClasses)
 
+	gateways := NewGatewayIndex(krtopts, controllerName, policies, kubeRawGateways, gatewayClasses)
 	routes := NewRoutesIndex(krtopts, httpRoutes, grpcRoutes, tcproutes, tlsRoutes, policies, backendIndex, refgrants)
 	return gateways, routes, backendIndex, endpointIRs
 }

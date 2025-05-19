@@ -65,6 +65,9 @@ type Settings struct {
 	// Defaults to an empty list which selects all namespaces.
 	// E.g., [{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]
 	DiscoveryNamespaceSelectors string `split_words:"true" default:"[]"`
+
+	// EnableAgentGateway enables kgateway to send config to the agentgateway
+	EnableAgentGateway bool `split_words:"true" default:"false"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env

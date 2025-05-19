@@ -46,6 +46,7 @@ func TestSettings(t *testing.T) {
 				IngressUseWaypoints:         false,
 				LogLevel:                    "info",
 				DiscoveryNamespaceSelectors: "[]",
+				EnableAgentGateway:          false,
 			},
 		},
 		{
@@ -69,6 +70,7 @@ func TestSettings(t *testing.T) {
 				"KGW_INGRESS_USE_WAYPOINTS":         "true",
 				"KGW_LOG_LEVEL":                     "debug",
 				"KGW_DISCOVERY_NAMESPACE_SELECTORS": `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
+				"KGW_ENABLE_AGENT_GATEWAY":          "true",
 			},
 			expectedSettings: &settings.Settings{
 				DnsLookupFamily:             "V4_ONLY",
@@ -88,6 +90,7 @@ func TestSettings(t *testing.T) {
 				IngressUseWaypoints:         true,
 				LogLevel:                    "debug",
 				DiscoveryNamespaceSelectors: `[{"matchExpressions":[{"key":"kubernetes.io/metadata.name","operator":"In","values":["infra"]}]},{"matchLabels":{"app":"a"}}]`,
+				EnableAgentGateway:          true,
 			},
 		},
 		{
@@ -123,6 +126,7 @@ func TestSettings(t *testing.T) {
 				WaypointLocalBinding:        false,
 				LogLevel:                    "info",
 				DiscoveryNamespaceSelectors: "[]",
+				EnableAgentGateway:          false,
 			},
 		},
 	}
