@@ -31,6 +31,7 @@ spec:
       {{- end }}
       {{- end}}
       labels:
+        {{- include "kgateway.gateway.constLabels" . | nindent 8 }}
         {{- include "kgateway.gateway.selectorLabels" . | nindent 8 }}
         {{- with $gateway.extraPodLabels }}
         {{- toYaml . | nindent 8 }}
