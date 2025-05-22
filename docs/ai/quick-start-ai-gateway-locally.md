@@ -33,8 +33,9 @@ EOF
 
 ## Setup LLM Locally
 
-1. Find your local IP address  
-   Run `ipconfig` in the terminal and find your IP address. For me, it's `192.168.181.210`:
+1. Run ipconfig (or ifconfig on Linux/macOS) in your terminal to find your IP address.
+
+   Example output:
 
    ```text
    en0: flags=8863<UP,BROADCAST,SMART,RUNNING,SIMPLEX,MULTICAST> mtu 1500
@@ -44,7 +45,10 @@ EOF
    ```
 
 2. Start the Ollama service  
-   Run `OLLAMA_HOST=192.168.181.210 ollama serve` (remember to replace `OLLAMA_HOST` with yours!)
+   Run the following command, replacing `192.168.181.210` with your actual IP address from the previous step:
+   `OLLAMA_HOST=192.168.181.210 ollama serve`
+   
+   Example output:
 
    ```text
    time=2025-05-21T12:33:42.433+08:00 level=INFO source=routes.go:1205 msg="server config"
@@ -66,7 +70,7 @@ EOF
 
 ## Using Inline Token
 
-1. Create the Backend Resource. In fact, authentication is not required here. `authToken` is a required field for creating a `Backend`. You can fill in any value for `inline`.
+1. Create the Backend Resource. Although authentication is not required, the `authToken` field is mandatory for creating an AI `Backend`. You can provide any placeholder value for the inline token.
 
     ```yaml
     kubectl apply -f- <<EOF
@@ -146,8 +150,8 @@ EOF
             ]
         }' | jq
     ```
-
-    Output:
+   
+    Example output:
 
     ```json
     {
