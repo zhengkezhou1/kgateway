@@ -245,6 +245,8 @@ func getAISecretRef(llm v1alpha1.SupportedLLMProvider) *corev1.LocalObjectRefere
 		secretRef = llm.Gemini.AuthToken.SecretRef
 	} else if llm.VertexAI != nil {
 		secretRef = llm.VertexAI.AuthToken.SecretRef
+	} else if llm.OpenRouter != nil {
+		secretRef = llm.OpenRouter.AuthToken.SecretRef
 	}
 
 	return secretRef

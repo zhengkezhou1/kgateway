@@ -139,6 +139,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.MultiPoolConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("OpenAIConfig"):
 		return &apiv1alpha1.OpenAIConfigApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("OpenRouterConfig"):
+		return &apiv1alpha1.OpenRouterConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Pod"):
 		return &apiv1alpha1.PodApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Port"):

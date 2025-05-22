@@ -27,9 +27,10 @@ const (
 	tlsPort = 443
 
 	// well-known provider default hosts
-	OpenAIHost    = "api.openai.com"
-	GeminiHost    = "generativelanguage.googleapis.com"
-	AnthropicHost = "api.anthropic.com"
+	OpenAIHost     = "api.openai.com"
+	GeminiHost     = "generativelanguage.googleapis.com"
+	AnthropicHost  = "api.anthropic.com"
+	OpenRouterHost = "openrouter.ai"
 )
 
 func tlsMatch(matchStr string) *structpb.Struct {
@@ -113,6 +114,13 @@ func buildModelCluster(ctx context.Context, aiUs *v1alpha1.AIBackend, aiSecret *
 						secretForMultiPool = multiSecrets[GetMultiPoolSecretKey(idx, jdx, secretRef.Name)]
 					}
 					result, err = buildVertexAIEndpoint(ctx, ep.Provider.VertexAI, ep.HostOverride, secretForMultiPool)
+				} else if ep.Provider.OpenRouter != nil {
+					var secretForMultiPool *ir.Secret
+					if ep.Provider.OpenRouter.AuthToken.Kind == v1alpha1.SecretRef {
+						secretRef := ep.Provider.OpenRouter.AuthToken.SecretRef
+						secretForMultiPool = multiSecrets[GetMultiPoolSecretKey(idx, jdx, secretRef.Name)]
+					}
+					result, err = buildOpenRouterAIEndpoint(ctx, ep.Provider.OpenRouter, ep.HostOverride, secretForMultiPool)
 				}
 				if err != nil {
 					return err
@@ -260,6 +268,14 @@ func buildLLMEndpoint(ctx context.Context, aiUs *v1alpha1.AIBackend, aiSecrets *
 		prioritized = []*envoy_config_endpoint_v3.LocalityLbEndpoints{
 			{LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{host}},
 		}
+	} else if provider.OpenRouter != nil {
+		host, err := buildOpenRouterAIEndpoint(ctx, provider.OpenRouter, aiUs.LLM.HostOverride, aiSecrets)
+		if err != nil {
+			return nil, err
+		}
+		prioritized = []*envoy_config_endpoint_v3.LocalityLbEndpoints{
+			{LbEndpoints: []*envoy_config_endpoint_v3.LbEndpoint{host}},
+		}
 	}
 	return prioritized, nil
 }
@@ -342,6 +358,13 @@ func buildVertexAIEndpoint(ctx context.Context, data *v1alpha1.VertexAIConfig, h
 	), nil
 }
 
+func buildOpenRouterAIEndpoint(ctx context.Context, data *v1alpha1.OpenRouterConfig, hostOverride *v1alpha1.Host, aiSecrets *ir.Secret) (*envoy_config_endpoint_v3.LbEndpoint, error) {
+	token, err := aiutils.GetAuthToken(data.AuthToken, aiSecrets)
+	if err != nil {
+		return nil, err
+	}
+	return buildLocalityLbEndpoint(OpenRouterHost, tlsPort, hostOverride, buildEndpointMeta(token, data.Model, nil)), nil
+}
 func buildLocalityLbEndpoint(
 	host string,
 	port int32,

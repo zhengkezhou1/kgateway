@@ -204,6 +204,9 @@ func getBackendModel(llm *v1alpha1.LLMProvider, byType map[string]struct{}) stri
 	} else if provider.VertexAI != nil {
 		byType["vertex-ai"] = struct{}{}
 		llmModel = provider.VertexAI.Model
+	} else if provider.OpenRouter != nil {
+		byType["open-router"] = struct{}{}
+		llmModel = provider.OpenRouter.Model
 	}
 	return llmModel
 }

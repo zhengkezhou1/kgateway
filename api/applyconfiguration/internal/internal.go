@@ -943,6 +943,17 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: model
       type:
         scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenRouterConfig
+  map:
+    fields:
+    - name: authToken
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SingleAuthToken
+      default: {}
+    - name: model
+      type:
+        scalar: string
+      default: ""
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Pod
   map:
     fields:
@@ -1299,6 +1310,9 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: openai
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenAIConfig
+    - name: openrouter
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenRouterConfig
     - name: vertexai
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.VertexAIConfig

@@ -306,6 +306,52 @@ func TestProcessAIBackend_VertexAI(t *testing.T) {
 	assert.Equal(t, "google", filterMeta.Fields["publisher"].GetStringValue())
 }
 
+func TestProcessAIBackend_OpenRouter(t *testing.T) {
+	ctx := context.Background()
+	cluster := &envoy_config_cluster_v3.Cluster{
+		Name: "open-router-cluster",
+	}
+
+	aiBackend := &v1alpha1.AIBackend{
+		LLM: &v1alpha1.LLMProvider{
+			Provider: v1alpha1.SupportedLLMProvider{
+				OpenRouter: &v1alpha1.OpenRouterConfig{
+					Model: "openai/gpt-4o",
+					AuthToken: v1alpha1.SingleAuthToken{
+						Kind:   v1alpha1.Inline,
+						Inline: ptr.To("open-router-token")},
+				},
+			},
+		},
+	}
+
+	secrets := &ir.Secret{}
+	multiSecrets := map[string]*ir.Secret{}
+
+	err := ProcessAIBackend(ctx, aiBackend, secrets, multiSecrets, cluster)
+
+	require.NoError(t, err)
+
+	endpoints := cluster.LoadAssignment.Endpoints[0].LbEndpoints
+	require.Len(t, endpoints, 1)
+	endpoint := endpoints[0]
+	hostEndpoint := endpoint.GetEndpoint()
+	require.NotNil(t, hostEndpoint)
+
+	// Verify socket address
+	address := hostEndpoint.Address.GetSocketAddress()
+	require.NotNil(t, address)
+	assert.Equal(t, "openrouter.ai", address.Address)
+	assert.Equal(t, uint32(443), address.GetPortValue())
+
+	// Verify metadata
+	require.NotNil(t, endpoint.Metadata)
+	filterMeta := endpoint.Metadata.FilterMetadata["io.solo.transformation"]
+	require.NotNil(t, filterMeta)
+	assert.Equal(t, "open-router-token", filterMeta.Fields["auth_token"].GetStringValue())
+	assert.Equal(t, "openai/gpt-4o", filterMeta.Fields["model"].GetStringValue())
+}
+
 func TestProcessAIBackend_CustomHost(t *testing.T) {
 	ctx := context.Background()
 	cluster := &envoy_config_cluster_v3.Cluster{

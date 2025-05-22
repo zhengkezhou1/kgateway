@@ -85,6 +85,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Moderation":                      schema_kgateway_v2_api_v1alpha1_Moderation(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MultiPoolConfig":                 schema_kgateway_v2_api_v1alpha1_MultiPoolConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenAIConfig":                    schema_kgateway_v2_api_v1alpha1_OpenAIConfig(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenRouterConfig":                schema_kgateway_v2_api_v1alpha1_OpenRouterConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Pod":                             schema_kgateway_v2_api_v1alpha1_Pod(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyAncestorStatus":            schema_kgateway_v2_api_v1alpha1_PolicyAncestorStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyStatus":                    schema_kgateway_v2_api_v1alpha1_PolicyStatus(ref),
@@ -3179,6 +3180,37 @@ func schema_kgateway_v2_api_v1alpha1_OpenAIConfig(ref common.ReferenceCallback) 
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_OpenRouterConfig(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "OpenRouterConfig settings for the [OpenRouter](https://openrouter.ai/docs/api-reference/overview) LLM provider.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"authToken": {
+						SchemaProps: spec.SchemaProps{
+							Description: "The authorization token that the AI gateway uses to access the OpenRouter API. This token is automatically sent in the `Authorization` header of the request and prefixed with `Bearer`.",
+							Default:     map[string]interface{}{},
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SingleAuthToken"),
+						},
+					},
+					"model": {
+						SchemaProps: spec.SchemaProps{
+							Description: "require: The model to use. eg: \"openai/gpt-4o\"",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"authToken", "model"},
+			},
+		},
+		Dependencies: []string{
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SingleAuthToken"},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_Pod(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -4269,11 +4301,16 @@ func schema_kgateway_v2_api_v1alpha1_SupportedLLMProvider(ref common.ReferenceCa
 							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.VertexAIConfig"),
 						},
 					},
+					"openrouter": {
+						SchemaProps: spec.SchemaProps{
+							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenRouterConfig"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AnthropicConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AzureOpenAIConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GeminiConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenAIConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.VertexAIConfig"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AnthropicConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AzureOpenAIConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GeminiConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenAIConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenRouterConfig", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.VertexAIConfig"},
 	}
 }
 

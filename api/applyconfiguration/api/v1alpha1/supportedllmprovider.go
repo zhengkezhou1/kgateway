@@ -10,6 +10,7 @@ type SupportedLLMProviderApplyConfiguration struct {
 	Anthropic   *AnthropicConfigApplyConfiguration   `json:"anthropic,omitempty"`
 	Gemini      *GeminiConfigApplyConfiguration      `json:"gemini,omitempty"`
 	VertexAI    *VertexAIConfigApplyConfiguration    `json:"vertexai,omitempty"`
+	OpenRouter  *OpenRouterConfigApplyConfiguration  `json:"openrouter,omitempty"`
 }
 
 // SupportedLLMProviderApplyConfiguration constructs a declarative configuration of the SupportedLLMProvider type for use with
@@ -55,5 +56,13 @@ func (b *SupportedLLMProviderApplyConfiguration) WithGemini(value *GeminiConfigA
 // If called multiple times, the VertexAI field is set to the value of the last call.
 func (b *SupportedLLMProviderApplyConfiguration) WithVertexAI(value *VertexAIConfigApplyConfiguration) *SupportedLLMProviderApplyConfiguration {
 	b.VertexAI = value
+	return b
+}
+
+// WithOpenRouter sets the OpenRouter field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the OpenRouter field is set to the value of the last call.
+func (b *SupportedLLMProviderApplyConfiguration) WithOpenRouter(value *OpenRouterConfigApplyConfiguration) *SupportedLLMProviderApplyConfiguration {
+	b.OpenRouter = value
 	return b
 }

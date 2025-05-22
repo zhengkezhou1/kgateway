@@ -190,6 +190,34 @@ spec:
                             required:
                             - authToken
                             type: object
+                          openrouter:
+                            properties:
+                              authToken:
+                                properties:
+                                  inline:
+                                    type: string
+                                  kind:
+                                    enum:
+                                    - Inline
+                                    - SecretRef
+                                    - Passthrough
+                                    type: string
+                                  secretRef:
+                                    properties:
+                                      name:
+                                        default: ""
+                                        type: string
+                                    type: object
+                                    x-kubernetes-map-type: atomic
+                                required:
+                                - kind
+                                type: object
+                              model:
+                                type: string
+                            required:
+                            - authToken
+                            - model
+                            type: object
                           vertexai:
                             properties:
                               apiVersion:
@@ -393,6 +421,34 @@ spec:
                                             type: string
                                         required:
                                         - authToken
+                                        type: object
+                                      openrouter:
+                                        properties:
+                                          authToken:
+                                            properties:
+                                              inline:
+                                                type: string
+                                              kind:
+                                                enum:
+                                                - Inline
+                                                - SecretRef
+                                                - Passthrough
+                                                type: string
+                                              secretRef:
+                                                properties:
+                                                  name:
+                                                    default: ""
+                                                    type: string
+                                                type: object
+                                                x-kubernetes-map-type: atomic
+                                            required:
+                                            - kind
+                                            type: object
+                                          model:
+                                            type: string
+                                        required:
+                                        - authToken
+                                        - model
                                         type: object
                                       vertexai:
                                         properties:
