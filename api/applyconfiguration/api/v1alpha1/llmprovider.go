@@ -7,6 +7,7 @@ package v1alpha1
 type LLMProviderApplyConfiguration struct {
 	Provider     *SupportedLLMProviderApplyConfiguration `json:"provider,omitempty"`
 	HostOverride *HostApplyConfiguration                 `json:"hostOverride,omitempty"`
+	PathOverride *string                                 `json:"pathOverride,omitempty"`
 }
 
 // LLMProviderApplyConfiguration constructs a declarative configuration of the LLMProvider type for use with
@@ -28,5 +29,13 @@ func (b *LLMProviderApplyConfiguration) WithProvider(value *SupportedLLMProvider
 // If called multiple times, the HostOverride field is set to the value of the last call.
 func (b *LLMProviderApplyConfiguration) WithHostOverride(value *HostApplyConfiguration) *LLMProviderApplyConfiguration {
 	b.HostOverride = value
+	return b
+}
+
+// WithPathOverride sets the PathOverride field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the PathOverride field is set to the value of the last call.
+func (b *LLMProviderApplyConfiguration) WithPathOverride(value string) *LLMProviderApplyConfiguration {
+	b.PathOverride = &value
 	return b
 }

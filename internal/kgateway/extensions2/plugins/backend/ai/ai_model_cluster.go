@@ -453,7 +453,11 @@ func getTransformation(ctx context.Context, llm *v1alpha1.LLMProvider) (string, 
 	provider := llm.Provider
 	if provider.OpenAI != nil {
 		prefix = "Bearer "
-		path = "/v1/chat/completions"
+		if llm.PathOverride != nil {
+			path = *llm.PathOverride
+		} else {
+			path = "/v1/chat/completions"
+		}
 		bodyTransformation = defaultBodyTransformation()
 	} else if provider.Anthropic != nil {
 		headerName = "x-api-key"
