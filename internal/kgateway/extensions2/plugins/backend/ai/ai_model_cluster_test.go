@@ -306,19 +306,22 @@ func TestProcessAIBackend_VertexAI(t *testing.T) {
 	assert.Equal(t, "google", filterMeta.Fields["publisher"].GetStringValue())
 }
 
-func TestProcessAIBackend_CustomHost(t *testing.T) {
+func TestProcessAIBackend_CustomURL(t *testing.T) {
 	ctx := context.Background()
 	cluster := &envoy_config_cluster_v3.Cluster{
 		Name: "custom-host-cluster",
 	}
 
 	model := "gpt-4"
+	//TODO: Verify path override is correctly applied in transformation template
+	path := "/api/v1/chat/completions"
 	aiBackend := &v1alpha1.AIBackend{
 		LLM: &v1alpha1.LLMProvider{
 			HostOverride: &v1alpha1.Host{
 				Host: "custom-openai-host.example.com",
 				Port: 8443,
 			},
+			PathOverride: &path,
 			Provider: v1alpha1.SupportedLLMProvider{
 				OpenAI: &v1alpha1.OpenAIConfig{
 					Model: &model,

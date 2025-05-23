@@ -21,6 +21,13 @@ type LLMProvider struct {
 	// Send requests to a custom host and port, such as to proxy the request,
 	// or to use a different backend that is API-compliant with the Backend version.
 	HostOverride *Host `json:"hostOverride,omitempty"`
+
+	// Override the default API path for the LLM provider.
+	// This is particularly useful for: Third-party LLM aggregation services (e.g., OpenRouter) Or
+	// Custom enterprise proxy services that implement LLM provider APIs.
+	// When combined with HostOverride, allows complete customization of the target endpoint URL.
+	// If not specified, the default path for each provider will be used (e.g. "/v1/chat/completions" for OpenAI).
+	PathOverride *string `json:"pathOverride,omitempty"`
 }
 
 // SupportedLLMProvider configures the AI gateway to use a single LLM provider backend.
