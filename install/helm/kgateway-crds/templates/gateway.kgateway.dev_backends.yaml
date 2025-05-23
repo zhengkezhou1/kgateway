@@ -62,6 +62,8 @@ spec:
                         - host
                         - port
                         type: object
+                      pathOverride:
+                        type: string
                       provider:
                         maxProperties: 1
                         minProperties: 1
@@ -266,6 +268,8 @@ spec:
                                     - host
                                     - port
                                     type: object
+                                  pathOverride:
+                                    type: string
                                   provider:
                                     maxProperties: 1
                                     minProperties: 1

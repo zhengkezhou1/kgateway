@@ -3210,6 +3210,13 @@ func schema_kgateway_v2_api_v1alpha1_LLMProvider(ref common.ReferenceCallback) c
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host"),
 						},
 					},
+					"pathOverride": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Override the default API path for the LLM provider. This is particularly useful for: Third-party LLM aggregation services (e.g., OpenRouter) Or Custom enterprise proxy services that implement LLM provider APIs. When combined with HostOverride, allows complete customization of the target endpoint URL. If not specified, the default path for each provider will be used (e.g. \"/v1/chat/completions\" for OpenAI).",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
 				},
 				Required: []string{"provider"},
 			},
