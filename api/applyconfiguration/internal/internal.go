@@ -646,6 +646,19 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: traceableFilter
       type:
         scalar: boolean
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.FullPathOverride
+  map:
+    fields:
+    - name: headerName
+      type:
+        scalar: string
+    - name: path
+      type:
+        scalar: string
+      default: ""
+    - name: prefix
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GatewayExtension
   map:
     fields:
@@ -980,12 +993,12 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LLMProvider
   map:
     fields:
+    - name: fullPathOverride
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.FullPathOverride
     - name: hostOverride
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Host
-    - name: pathOverride
-      type:
-        scalar: string
     - name: provider
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SupportedLLMProvider

@@ -453,11 +453,7 @@ func getTransformation(ctx context.Context, llm *v1alpha1.LLMProvider) (string, 
 	provider := llm.Provider
 	if provider.OpenAI != nil {
 		prefix = "Bearer "
-		if llm.PathOverride != nil {
-			path = *llm.PathOverride
-		} else {
-			path = "/v1/chat/completions"
-		}
+		path = "/v1/chat/completions"
 		bodyTransformation = defaultBodyTransformation()
 	} else if provider.Anthropic != nil {
 		headerName = "x-api-key"
@@ -489,6 +485,16 @@ func getTransformation(ctx context.Context, llm *v1alpha1.LLMProvider) (string, 
 		// https://${LOCATION}-aiplatform.googleapis.com/${VERSION}/projects/${PROJECT_ID}/locations/${LOCATION}/publishers/${PUBLISHER}/models/${MODEL}:{generateContent|streamGenerateContent}
 		path = fmt.Sprintf(`/{{host_metadata("api_version")}}/projects/{{host_metadata("project")}}/locations/{{host_metadata("location")}}/publishers/{{host_metadata("publisher")}}/%s`, modelPath)
 	}
+	if llm.ProviderOverride != nil {
+		if llm.ProviderOverride.HeaderName != nil {
+			headerName = *llm.ProviderOverride.HeaderName
+		}
+		if llm.ProviderOverride.Prefix != nil {
+			prefix = *llm.ProviderOverride.Prefix
+		}
+		path = llm.ProviderOverride.Path
+	}
+
 	return headerName, prefix, path, bodyTransformation
 }
 
