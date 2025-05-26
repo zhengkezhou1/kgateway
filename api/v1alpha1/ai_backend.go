@@ -22,12 +22,20 @@ type LLMProvider struct {
 	// or to use a different backend that is API-compliant with the Backend version.
 	HostOverride *Host `json:"hostOverride,omitempty"`
 
-	// Override the default API path for the LLM provider.
-	// This is particularly useful for: Third-party LLM aggregation services (e.g., OpenRouter) Or
-	// Custom enterprise proxy services that implement LLM provider APIs.
-	// When combined with HostOverride, allows complete customization of the target endpoint URL.
-	// If not specified, the default path for each provider will be used (e.g. "/v1/chat/completions" for OpenAI).
-	PathOverride *string `json:"pathOverride,omitempty"`
+	ProviderOverride *FullPathOverride `json:"fullPathOverride,omitempty"`
+}
+
+// FullPathOverride configures the AI gateway to use a custom path for LLM provider API requests.
+// It allows overriding the default API path with a custom one, optionally with a prefix and header name.
+// This is useful when you need to route requests to a different API endpoint while maintaining
+// compatibility with the original provider's API structure.
+// +kubebuilder:validation:MinProperties=1
+type FullPathOverride struct {
+	// Path specifies the custom API path to use for the LLM provider requests.
+	// This path will replace the default API path for the provider.
+	Path       string  `json:"path"`
+	Prefix     *string `json:"prefix,omitempty"`
+	HeaderName *string `json:"headerName,omitempty"`
 }
 
 // SupportedLLMProvider configures the AI gateway to use a single LLM provider backend.

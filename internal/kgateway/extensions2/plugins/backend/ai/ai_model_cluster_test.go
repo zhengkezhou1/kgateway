@@ -314,14 +314,17 @@ func TestProcessAIBackend_CustomURL(t *testing.T) {
 
 	model := "gpt-4"
 	//TODO: Verify path override is correctly applied in transformation template
-	path := "/api/v1/chat/completions"
 	aiBackend := &v1alpha1.AIBackend{
 		LLM: &v1alpha1.LLMProvider{
 			HostOverride: &v1alpha1.Host{
 				Host: "custom-openai-host.example.com",
 				Port: 8443,
 			},
-			PathOverride: &path,
+			ProviderOverride: &v1alpha1.FullPathOverride{
+				Path:       "/api/v1/chat/completions",
+				Prefix:     nil,
+				HeaderName: nil,
+			},
 			Provider: v1alpha1.SupportedLLMProvider{
 				OpenAI: &v1alpha1.OpenAIConfig{
 					Model: &model,

@@ -93,6 +93,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.FileSinkApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("FilterType"):
 		return &apiv1alpha1.FilterTypeApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("FullPathOverride"):
+		return &apiv1alpha1.FullPathOverrideApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("GatewayExtension"):
 		return &apiv1alpha1.GatewayExtensionApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("GatewayExtensionSpec"):

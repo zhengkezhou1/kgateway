@@ -59,6 +59,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FieldDefault":                              schema_kgateway_v2_api_v1alpha1_FieldDefault(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FileSink":                                  schema_kgateway_v2_api_v1alpha1_FileSink(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FilterType":                                schema_kgateway_v2_api_v1alpha1_FilterType(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FullPathOverride":                          schema_kgateway_v2_api_v1alpha1_FullPathOverride(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GatewayExtension":                          schema_kgateway_v2_api_v1alpha1_GatewayExtension(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GatewayExtensionList":                      schema_kgateway_v2_api_v1alpha1_GatewayExtensionList(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GatewayExtensionSpec":                      schema_kgateway_v2_api_v1alpha1_GatewayExtensionSpec(ref),
@@ -2215,6 +2216,40 @@ func schema_kgateway_v2_api_v1alpha1_FilterType(ref common.ReferenceCallback) co
 	}
 }
 
+func schema_kgateway_v2_api_v1alpha1_FullPathOverride(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "FullPathOverride configures the AI gateway to use a custom path for LLM provider API requests. It allows overriding the default API path with a custom one, optionally with a prefix and header name. This is useful when you need to route requests to a different API endpoint while maintaining compatibility with the original provider's API structure.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"path": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Path specifies the custom API path to use for the LLM provider requests. This path will replace the default API path for the provider.",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"prefix": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"headerName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+				Required: []string{"path"},
+			},
+		},
+	}
+}
+
 func schema_kgateway_v2_api_v1alpha1_GatewayExtension(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -3210,11 +3245,9 @@ func schema_kgateway_v2_api_v1alpha1_LLMProvider(ref common.ReferenceCallback) c
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host"),
 						},
 					},
-					"pathOverride": {
+					"fullPathOverride": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Override the default API path for the LLM provider. This is particularly useful for: Third-party LLM aggregation services (e.g., OpenRouter) Or Custom enterprise proxy services that implement LLM provider APIs. When combined with HostOverride, allows complete customization of the target endpoint URL. If not specified, the default path for each provider will be used (e.g. \"/v1/chat/completions\" for OpenAI).",
-							Type:        []string{"string"},
-							Format:      "",
+							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FullPathOverride"),
 						},
 					},
 				},
@@ -3222,7 +3255,7 @@ func schema_kgateway_v2_api_v1alpha1_LLMProvider(ref common.ReferenceCallback) c
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SupportedLLMProvider"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FullPathOverride", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SupportedLLMProvider"},
 	}
 }
 

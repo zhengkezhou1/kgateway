@@ -46,6 +46,18 @@ spec:
                 properties:
                   llm:
                     properties:
+                      fullPathOverride:
+                        minProperties: 1
+                        properties:
+                          headerName:
+                            type: string
+                          path:
+                            type: string
+                          prefix:
+                            type: string
+                        required:
+                        - path
+                        type: object
                       hostOverride:
                         properties:
                           host:
@@ -62,8 +74,6 @@ spec:
                         - host
                         - port
                         type: object
-                      pathOverride:
-                        type: string
                       provider:
                         maxProperties: 1
                         minProperties: 1
@@ -252,6 +262,18 @@ spec:
                             pool:
                               items:
                                 properties:
+                                  fullPathOverride:
+                                    minProperties: 1
+                                    properties:
+                                      headerName:
+                                        type: string
+                                      path:
+                                        type: string
+                                      prefix:
+                                        type: string
+                                    required:
+                                    - path
+                                    type: object
                                   hostOverride:
                                     properties:
                                       host:
@@ -268,8 +290,6 @@ spec:
                                     - host
                                     - port
                                     type: object
-                                  pathOverride:
-                                    type: string
                                   provider:
                                     maxProperties: 1
                                     minProperties: 1

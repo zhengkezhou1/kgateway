@@ -56,8 +56,10 @@ spec:
       hostOverride:
         host: test-ai-provider.ai-test.svc.cluster.local
         port: 443
-      pathOverride:
-        "/api/v1/chat/completions"
+      fullPathOverride:
+        path: "/api/v1/chat/completions"
+        prefix: "custom-prefix "
+        headerName: "custom-header "
       provider:
         openai:
           authToken:

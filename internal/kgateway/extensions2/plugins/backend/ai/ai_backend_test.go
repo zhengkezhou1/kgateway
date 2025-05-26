@@ -20,6 +20,8 @@ import (
 
 func TestApplyAIBackend(t *testing.T) {
 	customPath := "/api/v1/chat/completions"
+	customHeader := "custom-header "
+	customPrefix := "custom-prefix "
 	typedFilterConfig := ir.TypedFilterConfigMap(map[string]proto.Message{})
 	pCtx := &ir.RouteBackendContext{
 		TypedFilterConfig: typedFilterConfig,
@@ -126,7 +128,11 @@ func TestApplyAIBackend(t *testing.T) {
 			name: "Single LLM provider with custom path",
 			aiBackend: &v1alpha1.AIBackend{
 				LLM: &v1alpha1.LLMProvider{
-					PathOverride: &customPath,
+					ProviderOverride: &v1alpha1.FullPathOverride{
+						Path:       customPath,
+						Prefix:     &customPrefix,
+						HeaderName: &customHeader,
+					},
 					Provider: v1alpha1.SupportedLLMProvider{
 						OpenAI: &v1alpha1.OpenAIConfig{
 							Model: ptr.To("gpt-3"),
@@ -175,8 +181,8 @@ func TestApplyAIBackend(t *testing.T) {
 													":path": {
 														Text: customPath,
 													},
-													"Authorization": {
-														Text: `Bearer {% if host_metadata("auth_token") != "" %}{{host_metadata("auth_token")}}{% else %}{{dynamic_metadata("auth_token","ai.kgateway.io")}}{% endif %}`,
+													customHeader: {
+														Text: customPrefix + `{% if host_metadata("auth_token") != "" %}{{host_metadata("auth_token")}}{% else %}{{dynamic_metadata("auth_token","ai.kgateway.io")}}{% endif %}`,
 													},
 												},
 												BodyTransformation: &envoytransformation.TransformationTemplate_MergeJsonKeys{
