@@ -46,17 +46,12 @@ spec:
                 properties:
                   llm:
                     properties:
-                      fullPathOverride:
-                        minProperties: 1
+                      authHeaderOverride:
                         properties:
                           headerName:
                             type: string
-                          path:
-                            type: string
                           prefix:
                             type: string
-                        required:
-                        - path
                         type: object
                       hostOverride:
                         properties:
@@ -73,6 +68,14 @@ spec:
                         required:
                         - host
                         - port
+                        type: object
+                      pathOverride:
+                        minProperties: 1
+                        properties:
+                          path:
+                            type: string
+                        required:
+                        - path
                         type: object
                       provider:
                         maxProperties: 1
@@ -262,17 +265,12 @@ spec:
                             pool:
                               items:
                                 properties:
-                                  fullPathOverride:
-                                    minProperties: 1
+                                  authHeaderOverride:
                                     properties:
                                       headerName:
                                         type: string
-                                      path:
-                                        type: string
                                       prefix:
                                         type: string
-                                    required:
-                                    - path
                                     type: object
                                   hostOverride:
                                     properties:
@@ -289,6 +287,14 @@ spec:
                                     required:
                                     - host
                                     - port
+                                    type: object
+                                  pathOverride:
+                                    minProperties: 1
+                                    properties:
+                                      path:
+                                        type: string
+                                    required:
+                                    - path
                                     type: object
                                   provider:
                                     maxProperties: 1

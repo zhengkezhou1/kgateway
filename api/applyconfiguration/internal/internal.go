@@ -186,6 +186,15 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: model
       type:
         scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AuthHeaderOverride
+  map:
+    fields:
+    - name: headerName
+      type:
+        scalar: string
+    - name: prefix
+      type:
+        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AwsAuth
   map:
     fields:
@@ -646,19 +655,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: traceableFilter
       type:
         scalar: boolean
-- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.FullPathOverride
-  map:
-    fields:
-    - name: headerName
-      type:
-        scalar: string
-    - name: path
-      type:
-        scalar: string
-      default: ""
-    - name: prefix
-      type:
-        scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.GatewayExtension
   map:
     fields:
@@ -993,12 +989,15 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.LLMProvider
   map:
     fields:
-    - name: fullPathOverride
+    - name: authHeaderOverride
       type:
-        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.FullPathOverride
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.AuthHeaderOverride
     - name: hostOverride
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Host
+    - name: pathOverride
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PathOverride
     - name: provider
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SupportedLLMProvider
@@ -1092,6 +1091,12 @@ var schemaYAML = typed.YAMLObject(`types:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.SingleAuthToken
       default: {}
     - name: model
+      type:
+        scalar: string
+- name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PathOverride
+  map:
+    fields:
+    - name: path
       type:
         scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Pod

@@ -5,9 +5,10 @@ package v1alpha1
 // LLMProviderApplyConfiguration represents a declarative configuration of the LLMProvider type for use
 // with apply.
 type LLMProviderApplyConfiguration struct {
-	Provider         *SupportedLLMProviderApplyConfiguration `json:"provider,omitempty"`
-	HostOverride     *HostApplyConfiguration                 `json:"hostOverride,omitempty"`
-	ProviderOverride *FullPathOverrideApplyConfiguration     `json:"fullPathOverride,omitempty"`
+	Provider           *SupportedLLMProviderApplyConfiguration `json:"provider,omitempty"`
+	HostOverride       *HostApplyConfiguration                 `json:"hostOverride,omitempty"`
+	PathOverride       *PathOverrideApplyConfiguration         `json:"pathOverride,omitempty"`
+	AuthHeaderOverride *AuthHeaderOverrideApplyConfiguration   `json:"authHeaderOverride,omitempty"`
 }
 
 // LLMProviderApplyConfiguration constructs a declarative configuration of the LLMProvider type for use with
@@ -32,10 +33,18 @@ func (b *LLMProviderApplyConfiguration) WithHostOverride(value *HostApplyConfigu
 	return b
 }
 
-// WithProviderOverride sets the ProviderOverride field in the declarative configuration to the given value
+// WithPathOverride sets the PathOverride field in the declarative configuration to the given value
 // and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the ProviderOverride field is set to the value of the last call.
-func (b *LLMProviderApplyConfiguration) WithProviderOverride(value *FullPathOverrideApplyConfiguration) *LLMProviderApplyConfiguration {
-	b.ProviderOverride = value
+// If called multiple times, the PathOverride field is set to the value of the last call.
+func (b *LLMProviderApplyConfiguration) WithPathOverride(value *PathOverrideApplyConfiguration) *LLMProviderApplyConfiguration {
+	b.PathOverride = value
+	return b
+}
+
+// WithAuthHeaderOverride sets the AuthHeaderOverride field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the AuthHeaderOverride field is set to the value of the last call.
+func (b *LLMProviderApplyConfiguration) WithAuthHeaderOverride(value *AuthHeaderOverrideApplyConfiguration) *LLMProviderApplyConfiguration {
+	b.AuthHeaderOverride = value
 	return b
 }

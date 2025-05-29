@@ -26,6 +26,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtension":                               schema_kgateway_v2_api_v1alpha1_AiExtension(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtensionStats":                          schema_kgateway_v2_api_v1alpha1_AiExtensionStats(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AnthropicConfig":                           schema_kgateway_v2_api_v1alpha1_AnthropicConfig(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AuthHeaderOverride":                        schema_kgateway_v2_api_v1alpha1_AuthHeaderOverride(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsAuth":                                   schema_kgateway_v2_api_v1alpha1_AwsAuth(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsBackend":                                schema_kgateway_v2_api_v1alpha1_AwsBackend(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsLambda":                                 schema_kgateway_v2_api_v1alpha1_AwsLambda(ref),
@@ -60,7 +61,6 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FieldDefault":                              schema_kgateway_v2_api_v1alpha1_FieldDefault(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FileSink":                                  schema_kgateway_v2_api_v1alpha1_FileSink(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FilterType":                                schema_kgateway_v2_api_v1alpha1_FilterType(ref),
-		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FullPathOverride":                          schema_kgateway_v2_api_v1alpha1_FullPathOverride(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GatewayExtension":                          schema_kgateway_v2_api_v1alpha1_GatewayExtension(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GatewayExtensionList":                      schema_kgateway_v2_api_v1alpha1_GatewayExtensionList(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.GatewayExtensionSpec":                      schema_kgateway_v2_api_v1alpha1_GatewayExtensionSpec(ref),
@@ -93,6 +93,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Moderation":                                schema_kgateway_v2_api_v1alpha1_Moderation(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.MultiPoolConfig":                           schema_kgateway_v2_api_v1alpha1_MultiPoolConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.OpenAIConfig":                              schema_kgateway_v2_api_v1alpha1_OpenAIConfig(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PathOverride":                              schema_kgateway_v2_api_v1alpha1_PathOverride(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Pod":                                       schema_kgateway_v2_api_v1alpha1_Pod(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyAncestorStatus":                      schema_kgateway_v2_api_v1alpha1_PolicyAncestorStatus(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PolicyStatus":                              schema_kgateway_v2_api_v1alpha1_PolicyStatus(ref),
@@ -936,6 +937,31 @@ func schema_kgateway_v2_api_v1alpha1_AnthropicConfig(ref common.ReferenceCallbac
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SingleAuthToken"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_AuthHeaderOverride(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "AuthHeaderOverride allows customization of the default Authorization header sent to the LLM Provider. The default header is `Authorization: Bearer <token>`. HeaderName can change the Authorization header name and Prefix can change the Bearer prefix",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"prefix": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+					"headerName": {
+						SchemaProps: spec.SchemaProps{
+							Type:   []string{"string"},
+							Format: "",
+						},
+					},
+				},
+			},
+		},
 	}
 }
 
@@ -2324,40 +2350,6 @@ func schema_kgateway_v2_api_v1alpha1_FilterType(ref common.ReferenceCallback) co
 	}
 }
 
-func schema_kgateway_v2_api_v1alpha1_FullPathOverride(ref common.ReferenceCallback) common.OpenAPIDefinition {
-	return common.OpenAPIDefinition{
-		Schema: spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Description: "FullPathOverride configures the AI gateway to use a custom path for LLM provider API requests. It allows overriding the default API path with a custom one, optionally with a prefix and header name. This is useful when you need to route requests to a different API endpoint while maintaining compatibility with the original provider's API structure.",
-				Type:        []string{"object"},
-				Properties: map[string]spec.Schema{
-					"path": {
-						SchemaProps: spec.SchemaProps{
-							Description: "Path specifies the custom API path to use for the LLM provider requests. This path will replace the default API path for the provider.",
-							Default:     "",
-							Type:        []string{"string"},
-							Format:      "",
-						},
-					},
-					"prefix": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-					"headerName": {
-						SchemaProps: spec.SchemaProps{
-							Type:   []string{"string"},
-							Format: "",
-						},
-					},
-				},
-				Required: []string{"path"},
-			},
-		},
-	}
-}
-
 func schema_kgateway_v2_api_v1alpha1_GatewayExtension(ref common.ReferenceCallback) common.OpenAPIDefinition {
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
@@ -3359,9 +3351,16 @@ func schema_kgateway_v2_api_v1alpha1_LLMProvider(ref common.ReferenceCallback) c
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host"),
 						},
 					},
-					"fullPathOverride": {
+					"pathOverride": {
 						SchemaProps: spec.SchemaProps{
-							Ref: ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FullPathOverride"),
+							Description: "Overrides the default API path for the LLM provider. Allows routing requests to a custom API endpoint path.",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PathOverride"),
+						},
+					},
+					"authHeaderOverride": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Customizes the Authorization header sent to the LLM provider. Allows changing the header name and/or the prefix (e.g., \"Bearer\").",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AuthHeaderOverride"),
 						},
 					},
 				},
@@ -3369,7 +3368,7 @@ func schema_kgateway_v2_api_v1alpha1_LLMProvider(ref common.ReferenceCallback) c
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.FullPathOverride", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SupportedLLMProvider"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AuthHeaderOverride", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.PathOverride", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SupportedLLMProvider"},
 	}
 }
 
@@ -3630,6 +3629,27 @@ func schema_kgateway_v2_api_v1alpha1_OpenAIConfig(ref common.ReferenceCallback) 
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.SingleAuthToken"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_PathOverride(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "PathOverride configures the AI gateway to use a custom path for LLM provider chat-completion API requests. It allows overriding the default API path with a custom one. This is useful when you need to route requests to a different API endpoint while maintaining compatibility with the original provider's API structure.",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"path": {
+						SchemaProps: spec.SchemaProps{
+							Description: "FullPath specifies the custom API path to use for the LLM provider requests. This path will replace the default API path for the provider.",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+				},
+				Required: []string{"path"},
+			},
+		},
 	}
 }
 
