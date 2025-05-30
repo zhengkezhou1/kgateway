@@ -316,7 +316,6 @@ func TestProcessAIBackend_CustomURL(t *testing.T) {
 	path := "/api/v1/chat/completions"
 	prefix := "Bearer"
 	header := "Authorization"
-	//TODO: Verify path override is correctly applied in transformation template
 	aiBackend := &v1alpha1.AIBackend{
 		LLM: &v1alpha1.LLMProvider{
 			HostOverride: &v1alpha1.Host{

@@ -150,6 +150,7 @@ func (s *tsuite) invokePytest(test string, extraEnv ...string) {
 	cmd := exec.Command(pythonBin, args...)
 	cmd.Dir = filepath.Join(s.rootDir, "test/kubernetes/e2e/features/aiextension/tests")
 	cmd.Env = []string{
+		fmt.Sprintf("TEST_OVERRIDE_BASE_URL=%s/openai-override", gwURL),
 		fmt.Sprintf("TEST_OPENAI_BASE_URL=%s/openai", gwURL),
 		fmt.Sprintf("TEST_AZURE_OPENAI_BASE_URL=%s/azure", gwURL),
 		fmt.Sprintf("TEST_GEMINI_BASE_URL=%s/gemini", gwURL), // need to specify HTTP as part of the endpoint
