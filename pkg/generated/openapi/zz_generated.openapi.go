@@ -3359,7 +3359,7 @@ func schema_kgateway_v2_api_v1alpha1_LLMProvider(ref common.ReferenceCallback) c
 					},
 					"authHeaderOverride": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Customizes the Authorization header sent to the LLM provider. Allows changing the header name and/or the prefix (e.g., \"Bearer\").",
+							Description: "Customizes the Authorization header sent to the LLM provider. Allows changing the header name and/or the prefix (e.g., \"Bearer\"). Note: Not all LLM providers use the Authorization header and prefix. For example, OpenAI uses header: \"Authorization\" and prefix: \"Bearer\" But Azure OpenAI uses header: \"api-key\" and no Bearer.",
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AuthHeaderOverride"),
 						},
 					},
@@ -3639,7 +3639,7 @@ func schema_kgateway_v2_api_v1alpha1_PathOverride(ref common.ReferenceCallback) 
 				Description: "PathOverride configures the AI gateway to use a custom path for LLM provider chat-completion API requests. It allows overriding the default API path with a custom one. This is useful when you need to route requests to a different API endpoint while maintaining compatibility with the original provider's API structure.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"path": {
+					"fullPath": {
 						SchemaProps: spec.SchemaProps{
 							Description: "FullPath specifies the custom API path to use for the LLM provider requests. This path will replace the default API path for the provider.",
 							Type:        []string{"string"},
@@ -3647,7 +3647,7 @@ func schema_kgateway_v2_api_v1alpha1_PathOverride(ref common.ReferenceCallback) 
 						},
 					},
 				},
-				Required: []string{"path"},
+				Required: []string{"fullPath"},
 			},
 		},
 	}

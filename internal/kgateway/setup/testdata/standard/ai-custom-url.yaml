@@ -13,10 +13,36 @@ spec:
         namespaces:
           from: All
 ---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: Backend
+metadata:
+  labels:
+    app: kgateway
+  name: openai-override
+  namespace: gwtest
+spec:
+  type: AI
+  ai:
+    llm:
+      hostOverride:
+        host: test-ai-provider.ai-test.svc.cluster.local
+        port: 443
+      pathOverride:
+        fullPath: "/api/v1/chat/completions"
+      authHeaderOverride:
+        prefix: "custom-prefix"
+        headerName: "custom-header"
+      provider:
+        openai:
+          authToken:
+            kind: "SecretRef"
+            secretRef:
+              name: openai-override-secret
+---
 apiVersion: v1
 kind: Secret
 metadata:
-  name: openai-secret
+  name: openai-override-secret
   namespace: gwtest
 type: Opaque
 data:
@@ -36,34 +62,9 @@ spec:
     - matches:
         - path:
             type: Exact
-            value: /openai
+            value: /openai-override
       backendRefs:
-        - name: openai
+        - name: openai-override
           kind: Backend
           group: gateway.kgateway.dev
 ---
-apiVersion: gateway.kgateway.dev/v1alpha1
-kind: Backend
-metadata:
-  labels:
-    app: kgateway
-  name: openai
-  namespace: gwtest
-spec:
-  type: AI
-  ai:
-    llm:
-      hostOverride:
-        host: test-ai-provider.ai-test.svc.cluster.local
-        port: 443
-      pathOverride:
-        path: "/api/v1/chat/completions"
-      authHeaderOverride:
-        prefix: "custom-prefix "
-        headerName: "custom-header "
-      provider:
-        openai:
-          authToken:
-            kind: "SecretRef"
-            secretRef:
-              name: openai-secret

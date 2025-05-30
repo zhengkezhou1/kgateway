@@ -43,8 +43,7 @@ type LLMProvider struct {
 type PathOverride struct {
 	// FullPath specifies the custom API path to use for the LLM provider requests.
 	// This path will replace the default API path for the provider.
-	// Only supported for OpenAI and Anthropic compatible APIs for now.
-	FullPath *string `json:"path"`
+	FullPath *string `json:"fullPath"`
 }
 
 // AuthHeaderOverride allows customization of the default Authorization header sent to the LLM Provider.

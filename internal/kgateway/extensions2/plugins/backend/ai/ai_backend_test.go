@@ -22,19 +22,6 @@ func TestApplyAIBackend(t *testing.T) {
 	customPath := "/api/v1/chat/completions"
 	customHeader := "custom-header "
 	customPrefix := "custom-prefix "
-	typedFilterConfig := ir.TypedFilterConfigMap(map[string]proto.Message{})
-	pCtx := &ir.RouteBackendContext{
-		TypedFilterConfig: typedFilterConfig,
-		Backend: &ir.BackendObjectIR{
-			ObjectSource: ir.ObjectSource{
-				Group:     "test",
-				Kind:      "test-backend-plugin",
-				Namespace: "test-backend-plugin-ns",
-				Name:      "test-backend-plugin-us",
-			},
-		},
-		FilterChainName: "test",
-	}
 
 	outRoute := &envoy_config_route_v3.Route{}
 
@@ -62,7 +49,6 @@ func TestApplyAIBackend(t *testing.T) {
 					},
 				},
 			},
-			pCtx:          pCtx,
 			out:           outRoute,
 			expectedError: "",
 			expectedTypedConfig: &map[string]proto.Message{
@@ -146,7 +132,6 @@ func TestApplyAIBackend(t *testing.T) {
 					},
 				},
 			},
-			pCtx:          pCtx,
 			out:           outRoute,
 			expectedError: "",
 			expectedTypedConfig: &map[string]proto.Message{
@@ -242,7 +227,6 @@ func TestApplyAIBackend(t *testing.T) {
 					},
 				},
 			},
-			pCtx:                pCtx,
 			out:                 outRoute,
 			expectedError:       "multiple AI backend types found for single ai route",
 			expectedTypedConfig: nil,
@@ -251,6 +235,20 @@ func TestApplyAIBackend(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			typedFilterConfig := ir.TypedFilterConfigMap(map[string]proto.Message{})
+			pCtx := &ir.RouteBackendContext{
+				TypedFilterConfig: typedFilterConfig,
+				Backend: &ir.BackendObjectIR{
+					ObjectSource: ir.ObjectSource{
+						Group:     "test",
+						Kind:      "test-backend-plugin",
+						Namespace: "test-backend-plugin-ns",
+						Name:      "test-backend-plugin-us",
+					},
+				},
+				FilterChainName: "test",
+			}
+			tt.pCtx = pCtx
 			aiIR := &IR{}
 			err := PreprocessAIBackend(context.Background(), tt.aiBackend, aiIR)
 			if tt.expectedError != "" && err == nil {

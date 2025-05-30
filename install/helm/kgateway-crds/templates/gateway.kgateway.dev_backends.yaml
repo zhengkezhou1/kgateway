@@ -72,10 +72,10 @@ spec:
                       pathOverride:
                         minProperties: 1
                         properties:
-                          path:
+                          fullPath:
                             type: string
                         required:
-                        - path
+                        - fullPath
                         type: object
                       provider:
                         maxProperties: 1
@@ -291,10 +291,10 @@ spec:
                                   pathOverride:
                                     minProperties: 1
                                     properties:
-                                      path:
+                                      fullPath:
                                         type: string
                                     required:
-                                    - path
+                                    - fullPath
                                     type: object
                                   provider:
                                     maxProperties: 1

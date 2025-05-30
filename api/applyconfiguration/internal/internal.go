@@ -1096,7 +1096,7 @@ var schemaYAML = typed.YAMLObject(`types:
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.PathOverride
   map:
     fields:
-    - name: path
+    - name: fullPath
       type:
         scalar: string
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Pod

@@ -5,7 +5,7 @@ package v1alpha1
 // PathOverrideApplyConfiguration represents a declarative configuration of the PathOverride type for use
 // with apply.
 type PathOverrideApplyConfiguration struct {
-	FullPath *string `json:"path,omitempty"`
+	FullPath *string `json:"fullPath,omitempty"`
 }
 
 // PathOverrideApplyConfiguration constructs a declarative configuration of the PathOverride type for use with
