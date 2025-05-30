@@ -123,6 +123,7 @@ func main() {
 		})
 	})
 
+	// Custom endpoints
 	r.POST("/api/v1/chat/completions", func(c *gin.Context) {
 		var requestData map[string]interface{}
 		c.BindJSON(&requestData)
@@ -132,8 +133,8 @@ func main() {
 			fmt.Printf("has stream: %v\n", stream)
 		}
 		// check that api token is provided
-		apiToken := c.Request.Header.Get("Authorization")
-		if apiToken == "" {
+		apiToken := c.Request.Header.Get("custom-header")
+		if apiToken != "custom-prefix" {
 			fmt.Println("no api token provided in header")
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "API token is required"})
 			return

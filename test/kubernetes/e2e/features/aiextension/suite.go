@@ -57,6 +57,7 @@ func (s *tsuite) SetupSuite() {
 	s.manifests = map[string][]string{
 		"TestRouting":                 {commonManifest, backendManifest, routesBasicManifest},
 		"TestRoutingPassthrough":      {commonManifest, backendPassthroughManifest, routesBasicManifest},
+		"TestRoutingOverrideProvider": {commonManifest, backendPassthroughManifest, routesBasicManifest},
 		"TestStreaming":               {commonManifest, backendManifest, routeOptionStreamingManifest, routesWithExtensionManifest},
 		"TestPromptGuardRejectExtRef": {commonManifest, backendManifest, trafficPolicyPGRegexPatternRejectManifest, routesWitPGRegexPatternRejectManifest},
 		"TestPromptGuard":             {commonManifest, backendManifest, routesBasicManifest, promptGuardManifest},
@@ -114,6 +115,13 @@ func (s *tsuite) TestRoutingPassthrough() {
 	s.invokePytest(
 		"routing.py",
 		"TEST_TOKEN_PASSTHROUGH=true",
+	)
+}
+
+func (s *tsuite) TestRoutingOverrideProvider() {
+	s.invokePytest(
+		"routing.py",
+		"TEST_OVERRIDE_PROVIDER=true",
 	)
 }
 

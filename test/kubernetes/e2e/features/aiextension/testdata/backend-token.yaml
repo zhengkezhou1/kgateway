@@ -15,6 +15,9 @@ spec:
         insecureSkipVerify: true
       pathOverride:
         path: "/api/v1/chat/completions"
+      authHeaderOverride:
+        prefix: "custom-prefix"
+        headerName: "custom-header"
       provider:
         openai:
           authToken:
