@@ -47,8 +47,8 @@ overrideProvider = os.environ.get("TEST_OVERRIDE_PROVIDER", "false").lower() == 
 class LLMClient:
     openai_client = OpenAI(
         default_headers={"custom-header":"custom-prefix"} if overrideProvider else None,
-        api_key=None if overrideProvider else "passthrough" if passthrough else "FAKE",
-        base_url=TEST_OPENAI_BASE_URL if overrideProvider else TEST_OVERRIDE_BASE_URL,
+        api_key="passthrough-openai-key" if passthrough else "FAKE",
+        base_url = TEST_OVERRIDE_BASE_URL if overrideProvider else TEST_OPENAI_BASE_URL,
         max_retries=10,
     )
     azure_openai_client = AzureOpenAI(
