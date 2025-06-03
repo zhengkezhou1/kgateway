@@ -516,6 +516,26 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry(
+		"http gateway with session persistence (cookie)",
+		translatorTestCase{
+			inputFile:  "session-persistence/cookie.yaml",
+			outputFile: "session-persistence/cookie.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}),
+	Entry(
+		"http gateway with session persistence (header)",
+		translatorTestCase{
+			inputFile:  "session-persistence/header.yaml",
+			outputFile: "session-persistence/header.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}),
 	Entry("HTTPListenerPolicy with upgrades", translatorTestCase{
 		inputFile:  "https-listener-pol/upgrades.yaml",
 		outputFile: "https-listener-pol/upgrades.yaml",
