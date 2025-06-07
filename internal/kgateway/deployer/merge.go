@@ -717,7 +717,7 @@ func deepMergeAIExtension(dst, src *v1alpha1.AiExtension) *v1alpha1.AiExtension 
 	dst.Env = deepMergeSlices(dst.GetEnv(), src.GetEnv())
 	dst.Ports = deepMergeSlices(dst.GetPorts(), src.GetPorts())
 	dst.Stats = deepMergeAIExtensionStats(dst.GetStats(), src.GetStats())
-
+	dst.Trace = deepMergeAIExtensionTrace(dst.GetTracing(), src.GetTracing())
 	return dst
 }
 
@@ -733,6 +733,20 @@ func deepMergeAIExtensionStats(dst, src *v1alpha1.AiExtensionStats) *v1alpha1.Ai
 
 	dst.CustomLabels = deepMergeSlices(dst.GetCustomLabels(), src.GetCustomLabels())
 
+	return dst
+}
+
+func deepMergeAIExtensionTrace(dst, src *v1alpha1.AiExtensionTrace) *v1alpha1.AiExtensionTrace {
+	if src == nil {
+		return dst
+	}
+	if dst == nil {
+		return src
+	}
+	dst.Enabled = mergePointers(dst.GetEnabled(), src.GetEnabled())
+	dst.ServiceName = mergeComparable(src.ServiceName, dst.ServiceName)
+	dst.Address = mergeComparable(src.Address, dst.Address)
+	dst.Port = mergeComparable(src.Port, dst.Port)
 	return dst
 }
 

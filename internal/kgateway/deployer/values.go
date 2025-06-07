@@ -2,6 +2,7 @@ package deployer
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 )
@@ -156,8 +157,15 @@ type helmAIExtension struct {
 	Env             []corev1.EnvVar              `json:"env,omitempty"`
 	Ports           []corev1.ContainerPort       `json:"ports,omitempty"`
 	Stats           []byte                       `json:"stats,omitempty"`
+	Tracing         *helmTracing                 `json:"tracing,omitempty"`
 }
 
+type helmTracing struct {
+	Enabled     *bool           `json:"enabled,omitempty"`
+	ServiceName string          `json:"serviceName,omitempty"`
+	Address     string          `json:"address,omitempty"`
+	Port        gwv1.PortNumber `json:"port,omitempty"`
+}
 type helmInferenceExtension struct {
 	EndpointPicker *helmEndpointPickerExtension `json:"endpointPicker,omitempty"`
 }

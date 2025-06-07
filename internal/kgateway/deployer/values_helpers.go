@@ -177,6 +177,18 @@ func getIstioValues(istioIntegrationEnabled bool, istioConfig *v1alpha1.IstioInt
 	}
 }
 
+func getTracingValues(tracingConfig *v1alpha1.AiExtensionTrace) *helmTracing {
+	if tracingConfig == nil {
+		return nil
+	}
+	return &helmTracing{
+		Enabled:     tracingConfig.Enabled,
+		ServiceName: tracingConfig.GetServiceName(),
+		Address:     tracingConfig.GetAddress(),
+		Port:        tracingConfig.GetPort(),
+	}
+}
+
 // Get the image values for the envoy container in the proxy deployment.
 func getImageValues(image *v1alpha1.Image) *helmImage {
 	if image == nil {
@@ -254,6 +266,7 @@ func getAIExtensionValues(config *v1alpha1.AiExtension) (*helmAIExtension, error
 		Env:             config.GetEnv(),
 		Ports:           config.GetPorts(),
 		Stats:           byt,
+		Tracing:         getTracingValues(config.GetTracing()),
 	}, nil
 }
 

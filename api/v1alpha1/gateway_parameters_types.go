@@ -3,6 +3,7 @@ package v1alpha1
 import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=gatewayparameters,verbs=get;list;watch
@@ -636,6 +637,20 @@ type AiExtension struct {
 	//       metadataKey: "principal:iss"
 	// ```
 	Stats *AiExtensionStats `json:"stats,omitempty"`
+
+	// Additional tracing config for AI Extension.
+	// This config be used to enable the request tracing.
+	// +optional
+	//
+	// Example:
+	// ```yaml
+	// tracing:
+	//   enabled: true
+	//   servicename: "aiExtension"
+	//   address: otel.collector.local
+	//   port: 4317
+	// ```
+	Trace *AiExtensionTrace `json:"tracing,omitempty"`
 }
 
 func (in *AiExtension) GetEnabled() *bool {
@@ -687,6 +702,13 @@ func (in *AiExtension) GetStats() *AiExtensionStats {
 	return in.Stats
 }
 
+func (in *AiExtension) GetTracing() *AiExtensionTrace {
+	if in == nil {
+		return nil
+	}
+	return in.Trace
+}
+
 type AiExtensionStats struct {
 	// Set of custom labels to be added to the request metrics.
 	// These will be added on each request which goes through the AI Extension.
@@ -699,6 +721,52 @@ func (in *AiExtensionStats) GetCustomLabels() []*CustomLabel {
 		return nil
 	}
 	return in.CustomLabels
+}
+
+// AiExtensionTrace defines the tracing configuration for the AI extension
+type AiExtensionTrace struct {
+	// Enabled controls whether tracing is enabled
+	Enabled *bool `json:"enabled,omitempty"`
+	// ServiceName specifies the name of the tracing server
+	// This name will be used to identify the source of trace data
+	// Typically set to the service identifier or name
+	ServiceName string `json:"servicename"`
+	// Address specifies the address of the tracing server
+	// Can be an IP address or domain name
+	// Example: "111.111.111.111" or "otel-collector.default.svc.cluster.local"
+	Address string `json:"address"`
+	// Port specifies the port number of the tracing server
+	// Uses gwv1.PortNumber type to ensure port number validity
+	// Typically uses standard tracing ports such as 4317 (OTLP/gRPC)
+	Port gwv1.PortNumber `json:"port"`
+}
+
+func (in *AiExtensionTrace) GetEnabled() *bool {
+	if in == nil {
+		return nil
+	}
+	return in.Enabled
+}
+
+func (in *AiExtensionTrace) GetServiceName() string {
+	if in == nil {
+		return ""
+	}
+	return in.ServiceName
+}
+
+func (in *AiExtensionTrace) GetAddress() string {
+	if in == nil {
+		return ""
+	}
+	return in.Address
+}
+
+func (in *AiExtensionTrace) GetPort() gwv1.PortNumber {
+	if in == nil {
+		return 0
+	}
+	return in.Port
 }
 
 type CustomLabel struct {

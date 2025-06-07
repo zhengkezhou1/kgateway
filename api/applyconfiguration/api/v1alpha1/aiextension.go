@@ -16,6 +16,7 @@ type AiExtensionApplyConfiguration struct {
 	Env             []v1.EnvVar                         `json:"env,omitempty"`
 	Ports           []v1.ContainerPort                  `json:"ports,omitempty"`
 	Stats           *AiExtensionStatsApplyConfiguration `json:"stats,omitempty"`
+	Trace           *AiExtensionTraceApplyConfiguration `json:"tracing,omitempty"`
 }
 
 // AiExtensionApplyConfiguration constructs a declarative configuration of the AiExtension type for use with
@@ -81,5 +82,13 @@ func (b *AiExtensionApplyConfiguration) WithPorts(values ...v1.ContainerPort) *A
 // If called multiple times, the Stats field is set to the value of the last call.
 func (b *AiExtensionApplyConfiguration) WithStats(value *AiExtensionStatsApplyConfiguration) *AiExtensionApplyConfiguration {
 	b.Stats = value
+	return b
+}
+
+// WithTrace sets the Trace field in the declarative configuration to the given value
+// and returns the receiver, so that objects can be built by chaining "With" function invocations.
+// If called multiple times, the Trace field is set to the value of the last call.
+func (b *AiExtensionApplyConfiguration) WithTrace(value *AiExtensionTraceApplyConfiguration) *AiExtensionApplyConfiguration {
+	b.Trace = value
 	return b
 }

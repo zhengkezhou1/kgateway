@@ -29,6 +29,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.AiExtensionApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AiExtensionStats"):
 		return &apiv1alpha1.AiExtensionStatsApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AiExtensionTrace"):
+		return &apiv1alpha1.AiExtensionTraceApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AIPolicy"):
 		return &apiv1alpha1.AIPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AIPromptEnrichment"):

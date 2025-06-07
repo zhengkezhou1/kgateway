@@ -298,6 +298,8 @@ spec:
         volumeMounts:
           - mountPath: /var/run/stats
             name: ai-stats-config
+          - mountPath: /var/run/tracing
+            name: ai-tracing-config
 {{- end }} {{/* if (($gateway.aiExtension).enabled) */}}
       {{- with $gateway.nodeSelector }}
       nodeSelector:
@@ -322,6 +324,11 @@ spec:
       - configMap:
           name: {{ include "kgateway.gateway.fullname" . }}-ai-stats-config
         name: ai-stats-config
+      {{- if (($gateway.aiExtension.tracing).enabled) }}
+      - configMap:
+          name: {{ include "kgateway.gateway.fullname" . }}-ai-tracing-config
+        name: ai-tracing-config
+      {{- end }}
 {{- end }} {{/* if (($gateway.aiExtension).enabled) */}}
 {{- if $gateway.istio.enabled }}
       - emptyDir:
@@ -410,7 +417,18 @@ metadata:
 data:
   stats.json: {{ $gateway.aiExtension.stats }}
 {{- end}}
-{{- end}}
+{{- if $gateway.aiExtension.tracing }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "kgateway.gateway.fullname" . }}-ai-tracing-config
+  labels:
+    {{- include "kgateway.gateway.constLabels" . | nindent 4 }}
+    {{- include "kgateway.gateway.labels" . | nindent 4 }}
+data:
+  tracing.json: {{ $gateway.aiExtension.tracing }}
+{{- end}} {{/* if ($gateway.aiExtension.tracing) */}}
+{{- end}} {{/* if (($gateway.aiExtension).enabled) */}}
 ---
 apiVersion: v1
 kind: ConfigMap

@@ -25,6 +25,7 @@ func GetOpenAPIDefinitions(ref common.ReferenceCallback) map[string]common.OpenA
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AgentGateway":                              schema_kgateway_v2_api_v1alpha1_AgentGateway(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtension":                               schema_kgateway_v2_api_v1alpha1_AiExtension(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtensionStats":                          schema_kgateway_v2_api_v1alpha1_AiExtensionStats(ref),
+		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtensionTrace":                          schema_kgateway_v2_api_v1alpha1_AiExtensionTrace(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AnthropicConfig":                           schema_kgateway_v2_api_v1alpha1_AnthropicConfig(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AuthHeaderOverride":                        schema_kgateway_v2_api_v1alpha1_AuthHeaderOverride(ref),
 		"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AwsAuth":                                   schema_kgateway_v2_api_v1alpha1_AwsAuth(ref),
@@ -869,11 +870,17 @@ func schema_kgateway_v2_api_v1alpha1_AiExtension(ref common.ReferenceCallback) c
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtensionStats"),
 						},
 					},
+					"tracing": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Additional tracing config for AI Extension. This config be used to enable the request tracing.\n\nExample: ```yaml tracing:\n  enabled: true\n  servicename: \"aiExtension\"\n  address: otel.collector.local\n  port: 4317\n```",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtensionTrace"),
+						},
+					},
 				},
 			},
 		},
 		Dependencies: []string{
-			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtensionStats", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Image", "k8s.io/api/core/v1.ContainerPort", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext"},
+			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtensionStats", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.AiExtensionTrace", "github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Image", "k8s.io/api/core/v1.ContainerPort", "k8s.io/api/core/v1.EnvVar", "k8s.io/api/core/v1.ResourceRequirements", "k8s.io/api/core/v1.SecurityContext"},
 	}
 }
 
@@ -901,6 +908,51 @@ func schema_kgateway_v2_api_v1alpha1_AiExtensionStats(ref common.ReferenceCallba
 		},
 		Dependencies: []string{
 			"github.com/kgateway-dev/kgateway/v2/api/v1alpha1.CustomLabel"},
+	}
+}
+
+func schema_kgateway_v2_api_v1alpha1_AiExtensionTrace(ref common.ReferenceCallback) common.OpenAPIDefinition {
+	return common.OpenAPIDefinition{
+		Schema: spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Description: "AiExtensionTrace defines the tracing configuration for the AI extension",
+				Type:        []string{"object"},
+				Properties: map[string]spec.Schema{
+					"enabled": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Enabled controls whether tracing is enabled",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+					"servicename": {
+						SchemaProps: spec.SchemaProps{
+							Description: "ServiceName specifies the name of the tracing server This name will be used to identify the source of trace data Typically set to the service identifier or name",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"address": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Address specifies the address of the tracing server Can be an IP address or domain name Example: \"111.111.111.111\" or \"otel-collector.default.svc.cluster.local\"",
+							Default:     "",
+							Type:        []string{"string"},
+							Format:      "",
+						},
+					},
+					"port": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Port specifies the port number of the tracing server Uses gwv1.PortNumber type to ensure port number validity Typically uses standard tracing ports such as 4317 (OTLP/gRPC)",
+							Default:     0,
+							Type:        []string{"integer"},
+							Format:      "int32",
+						},
+					},
+				},
+				Required: []string{"servicename", "address", "port"},
+			},
+		},
 	}
 }
 

@@ -272,6 +272,24 @@ spec:
                               type: object
                             type: array
                         type: object
+                      tracing:
+                        properties:
+                          address:
+                            type: string
+                          enabled:
+                            type: boolean
+                          port:
+                            format: int32
+                            maximum: 65535
+                            minimum: 1
+                            type: integer
+                          servicename:
+                            type: string
+                        required:
+                        - address
+                        - port
+                        - servicename
+                        type: object
                     type: object
                   deployment:
                     properties:
