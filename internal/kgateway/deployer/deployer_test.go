@@ -1357,7 +1357,7 @@ var _ = Describe("Deployer", func() {
 			expectedGwp := inp.defaultGwp.Spec.Kube
 			Expect(objs).NotTo(BeEmpty())
 			// Check we have Deployment, Envoy ConfigMap, ServiceAccount, Service, AI Stats ConfigMap
-			Expect(objs).To(HaveLen(5))
+			Expect(objs).To(HaveLen(6))
 			dep := objs.findDeployment(defaultNamespace, defaultDeploymentName)
 			Expect(dep).ToNot(BeNil())
 			Expect(dep.Spec.Replicas).ToNot(BeNil())
