@@ -298,8 +298,10 @@ spec:
         volumeMounts:
           - mountPath: /var/run/stats
             name: ai-stats-config
+          {{- if (($gateway.aiExtension.tracing).enabled) }}
           - mountPath: /var/run/tracing
             name: ai-tracing-config
+          {{- end }}
 {{- end }} {{/* if (($gateway.aiExtension).enabled) */}}
       {{- with $gateway.nodeSelector }}
       nodeSelector:
