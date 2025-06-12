@@ -24,6 +24,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 const (
@@ -99,7 +100,7 @@ func preProcessAITrafficPolicy(
 					RequestMatch: &envoytransformation.RouteTransformations_RouteTransformation_RequestMatch{
 						RequestTransformation: &envoytransformation.Transformation{
 							// Set this env var to true to log the request/response info for each transformation
-							LogRequestResponseInfo: wrapperspb.Bool(os.Getenv("AI_PLUGIN_DEBUG_TRANSFORMATIONS") == "true"),
+							LogRequestResponseInfo: wrapperspb.Bool(os.Getenv(testutils.AiDebugTransformations) == "true"),
 							TransformationType: &envoytransformation.Transformation_TransformationTemplate{
 								TransformationTemplate: transformationTemplate,
 							},
