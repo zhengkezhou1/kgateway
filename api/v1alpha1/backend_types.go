@@ -53,7 +53,7 @@ type BackendSpec struct {
 	// Type indicates the type of the backend to be used.
 	// +unionDiscriminator
 	// +kubebuilder:validation:Enum=AI;AWS;Static;DynamicForwardProxy
-	// +kubebuilder:validation:Required
+	// +required
 	Type BackendType `json:"type"`
 	// AI is the AI backend configuration.
 	// +optional
@@ -91,14 +91,13 @@ type DynamicForwardProxyBackend struct {
 	// EnableTls enables TLS. When true, the backend will be configured to use TLS. System CA will be used for validation.
 	// The hostname will be used for SNI and auto SAN validation.
 	// +optional
-	// +kubebuilder:validation:Optional
 	EnableTls bool `json:"enableTls,omitempty"`
 }
 
 // AwsBackend is the AWS backend configuration.
 type AwsBackend struct {
 	// AccountId is the AWS account ID to use for the backend.
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=12
 	// +kubebuilder:validation:Pattern="^[0-9]{12}$"
@@ -112,16 +111,13 @@ type AwsBackend struct {
 	// https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_filters/aws_request_signing_filter#credentials
 	//
 	// +optional
-	// +kubebuilder:validation:Optional
 	Auth *AwsAuth `json:"auth,omitempty"`
 	// Lambda configures the AWS lambda service.
 	// +optional
-	// +kubebuilder:validation:Optional
 	Lambda *AwsLambda `json:"lambda,omitempty"`
 	// Region is the AWS region to use for the backend.
 	// Defaults to us-east-1 if not specified.
 	// +optional
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:default=us-east-1
 	// +kubebuilder:validation:MinLength=1
 	// +kubebuilder:validation:MaxLength=63
@@ -144,13 +140,12 @@ const (
 type AwsAuth struct {
 	// Type specifies the authentication method to use for the backend.
 	// +unionDiscriminator
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:Enum=Secret
 	Type AwsAuthType `json:"type"`
 	// SecretRef references a Kubernetes Secret containing the AWS credentials.
 	// The Secret must have keys "accessKey", "secretKey", and optionally "sessionToken".
 	// +optional
-	// +kubebuilder:validation:Optional
 	SecretRef *corev1.LocalObjectReference `json:"secretRef,omitempty"`
 }
 
@@ -167,18 +162,16 @@ type AwsLambda struct {
 	// useful for testing and development purposes. When omitted, the default
 	// lambda hostname will be used.
 	// +optional
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Pattern="^https?://[-a-zA-Z0-9@:%.+~#?&/=]+$"
 	// +kubebuilder:validation:MaxLength=2048
 	EndpointURL string `json:"endpointURL,omitempty"`
 	// FunctionName is the name of the Lambda function to invoke.
-	// +kubebuilder:validation:Required
+	// +required
 	// +kubebuilder:validation:Pattern="^[A-Za-z0-9-_]{1,140}$"
 	FunctionName string `json:"functionName"`
 	// InvocationMode defines how to invoke the Lambda function.
 	// Defaults to Sync.
 	// +optional
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Enum=Sync;Async
 	// +kubebuilder:default=Sync
 	InvocationMode string `json:"invocationMode,omitempty"`
@@ -186,7 +179,6 @@ type AwsLambda struct {
 	// Valid values include a numeric version (e.g. "1"), an alias name
 	// (alphanumeric plus "-" or "_"), or the special literal "$LATEST".
 	// +optional
-	// +kubebuilder:validation:Optional
 	// +kubebuilder:validation:Pattern="^(\\$LATEST|[0-9]+|[A-Za-z0-9-_]{1,128})$"
 	Qualifier string `json:"qualifier,omitempty"`
 	// PayloadTransformation specifies payload transformation mode before it is sent to the Lambda function.
@@ -218,7 +210,7 @@ const (
 // StaticBackend references a static list of hosts.
 type StaticBackend struct {
 	// Hosts is a list of hosts to use for the backend.
-	// +kubebuilder:validation:required
+	// +required
 	// +kubebuilder:validation:MinItems=1
 	Hosts []Host `json:"hosts,omitempty"`
 
@@ -234,11 +226,10 @@ type Host struct {
 	// +kubebuilder:validation:MinLength=1
 	Host string `json:"host"`
 	// Port is the port to use for the backend.
-	// +kubebuilder:validation:Required
+	// +required
 	Port gwv1.PortNumber `json:"port"`
 	// InsecureSkipVerify allows skipping ssl validation for custom hosts
 	// +optional
-	// +kubebuilder:validation:Optional
 	InsecureSkipVerify *bool `json:"insecureSkipVerify,omitempty"`
 }
 
