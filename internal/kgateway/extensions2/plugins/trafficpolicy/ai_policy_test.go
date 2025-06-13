@@ -15,7 +15,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/ir"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 func TestProcessAITrafficPolicy(t *testing.T) {
@@ -77,9 +76,9 @@ func TestProcessAITrafficPolicy(t *testing.T) {
 		}
 
 		// Set env var
-		oldEnv := os.Getenv(testutils.AiDebugTransformations)
-		os.Setenv(testutils.AiDebugTransformations, "true")
-		defer os.Setenv(testutils.AiDebugTransformations, oldEnv)
+		oldEnv := os.Getenv(AiDebugTransformations)
+		os.Setenv(AiDebugTransformations, "true")
+		defer os.Setenv(AiDebugTransformations, oldEnv)
 
 		// Execute
 		err := preProcessAITrafficPolicy(aiConfig, aiIR)

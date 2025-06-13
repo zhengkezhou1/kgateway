@@ -2,6 +2,7 @@ package ai
 
 import (
 	"context"
+
 	"log/slog"
 	"os"
 	"strconv"
@@ -13,8 +14,8 @@ import (
 	envoy_upstreams_v3 "github.com/envoyproxy/go-control-plane/envoy/extensions/upstreams/http/v3"
 	"google.golang.org/protobuf/types/known/anypb"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/trafficpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
 const (
@@ -30,7 +31,7 @@ func GetAIAdditionalResources(ctx context.Context) []*envoy_config_cluster_v3.Cl
 	// The port can be whatever you want.
 	// When running the ext-proc filter locally, you also need to set
 	// `LISTEN_ADDR` to `0.0.0.0:PORT`. Where port is the same port as above.
-	listenAddr := strings.Split(os.Getenv(testutils.AiListenAddr), ":")
+	listenAddr := strings.Split(os.Getenv(trafficpolicy.AiListenAddr), ":")
 
 	var ep *envoy_config_endpoint_v3.LbEndpoint
 	if len(listenAddr) == 2 {
