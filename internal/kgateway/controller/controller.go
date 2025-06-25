@@ -88,6 +88,7 @@ func NewBaseGatewayController(ctx context.Context, cfg GatewayConfig, extraGatew
 			cli:          cfg.Mgr.GetClient(),
 			scheme:       cfg.Mgr.GetScheme(),
 			customEvents: make(chan event.TypedGenericEvent[ir.Gateway], 1024),
+			metrics:      newControllerMetricsRecorder("gatewayclass"),
 		},
 		extraGatewayParameters: extraGatewayParameters,
 	}
@@ -121,6 +122,7 @@ func NewBaseInferencePoolController(ctx context.Context,
 			cli:          poolCfg.Mgr.GetClient(),
 			scheme:       poolCfg.Mgr.GetScheme(),
 			customEvents: make(chan event.TypedGenericEvent[ir.Gateway], 1024),
+			metrics:      newControllerMetricsRecorder("gatewayclass-inferencepool"),
 		},
 		extraGatewayParameters: extraGatewayParameters,
 	}
@@ -331,6 +333,7 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 		controllerName: c.cfg.ControllerName,
 		autoProvision:  c.cfg.AutoProvision,
 		deployer:       d,
+		metrics:        newControllerMetricsRecorder("gateway"),
 	})
 }
 
@@ -461,6 +464,7 @@ func (c *controllerBuilder) watchInferencePool(ctx context.Context) error {
 			cli:      c.cfg.Mgr.GetClient(),
 			scheme:   c.cfg.Mgr.GetScheme(),
 			deployer: d,
+			metrics:  newControllerMetricsRecorder("gateway-inferencepool"),
 		}
 		if err := buildr.Complete(r); err != nil {
 			return err
@@ -496,10 +500,15 @@ type controllerReconciler struct {
 	cli          client.Client
 	scheme       *runtime.Scheme
 	customEvents chan event.TypedGenericEvent[ir.Gateway]
+	metrics      controllerMetricsRecorder
 }
 
-func (r *controllerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
+func (r *controllerReconciler) Reconcile(ctx context.Context, req ctrl.Request) (res ctrl.Result, rErr error) {
 	log := log.FromContext(ctx).WithValues("gwclass", req.NamespacedName)
+
+	if r.metrics != nil {
+		defer r.metrics.reconcileStart()(rErr)
+	}
 
 	gwclass := &apiv1.GatewayClass{}
 	if err := r.cli.Get(ctx, req.NamespacedName, gwclass); err != nil {
