@@ -1242,6 +1242,17 @@ var _ = Describe("Deployer", func() {
 									Name:          "foo",
 									ContainerPort: 80,
 								}},
+								Tracing: &gw2_v1alpha1.AiExtensionTrace{
+									Enabled:  ptr.To(true),
+									EndPoint: "http://my-otel-collector.svc.cluster.local:4317",
+									Sampler: gw2_v1alpha1.OTelTracesSampler{
+										SamplerType: gw2_v1alpha1.OTelTracesSamplerTraceidratio,
+										SamplerArg:  "0.5",
+									},
+									Timeout:           1 * time.Second,
+									Protocol:          gw2_v1alpha1.OTLPTracesProtocolTypeGrpc,
+									TransportSecurity: gw2_v1alpha1.OTLPTransportSecurityInsecure,
+								},
 							},
 						},
 					},
@@ -1417,7 +1428,7 @@ var _ = Describe("Deployer", func() {
 			expectedGwp := inp.defaultGwp.Spec.Kube
 			Expect(objs).NotTo(BeEmpty())
 			// Check we have Deployment, Envoy ConfigMap, ServiceAccount, Service, AI Stats ConfigMap
-			Expect(objs).To(HaveLen(5))
+			Expect(objs).To(HaveLen(6))
 			dep := objs.findDeployment(defaultNamespace, defaultDeploymentName)
 			Expect(dep).ToNot(BeNil())
 			Expect(dep.Spec.Replicas).ToNot(BeNil())
@@ -1507,6 +1518,9 @@ var _ = Describe("Deployer", func() {
 
 			cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 			Expect(cm).ToNot(BeNil())
+
+			aiTracingConfig := objs.findConfigMap(defaultNamespace, defaultConfigMapName+"-ai-tracing-config")
+			Expect(aiTracingConfig).ToNot(BeNil())
 
 			logLevelsMap := expectedGwp.EnvoyContainer.Bootstrap.ComponentLogLevels
 			levels := []types.GomegaMatcher{}
@@ -2432,6 +2446,17 @@ func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.Gateway
 						Tag:        ptr.To("ai-extension-tag"),
 						Digest:     ptr.To("ai-extension-digest"),
 						PullPolicy: ptr.To(corev1.PullAlways),
+					},
+					Tracing: &gw2_v1alpha1.AiExtensionTrace{
+						Enabled:  ptr.To(true),
+						EndPoint: "http://my-otel-collector.svc.cluster.local:4317",
+						Sampler: gw2_v1alpha1.OTelTracesSampler{
+							SamplerType: gw2_v1alpha1.OTelTracesSamplerTraceidratio,
+							SamplerArg:  "0.5",
+						},
+						Timeout:           1 * time.Second,
+						Protocol:          gw2_v1alpha1.OTLPTracesProtocolTypeGrpc,
+						TransportSecurity: gw2_v1alpha1.OTLPTransportSecurityInsecure,
 					},
 				},
 			},

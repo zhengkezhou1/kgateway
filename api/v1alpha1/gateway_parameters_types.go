@@ -1,8 +1,11 @@
 package v1alpha1
 
 import (
+	"time"
+
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 )
 
 // +kubebuilder:rbac:groups=gateway.kgateway.dev,resources=gatewayparameters,verbs=get;list;watch
@@ -649,6 +652,11 @@ type AiExtension struct {
 	//       metadataKey: "principal:iss"
 	// ```
 	Stats *AiExtensionStats `json:"stats,omitempty"`
+
+	// Additional OTel tracing config for AI Extension.
+	//
+	// +optional
+	Tracing *AiExtensionTrace `json:"tracing,omitempty"`
 }
 
 func (in *AiExtension) GetEnabled() *bool {
@@ -698,6 +706,13 @@ func (in *AiExtension) GetStats() *AiExtensionStats {
 		return nil
 	}
 	return in.Stats
+}
+
+func (in *AiExtension) GetTracing() *AiExtensionTrace {
+	if in == nil {
+		return nil
+	}
+	return in.Tracing
 }
 
 type AiExtensionStats struct {
@@ -769,6 +784,202 @@ func (in *CustomLabel) GetKeyDelimiter() *string {
 		return nil
 	}
 	return in.KeyDelimiter
+}
+
+// AiExtensionTrace defines the tracing configuration for the AI extension
+type AiExtensionTrace struct {
+	// Enabled controls whether tracing is enabled
+	// +kubebuilder:validation:Required
+	Enabled *bool `json:"enabled,omitempty"`
+
+	// EndPoint specifies the URL of the OTLP Exporter for traces.
+	// Example: "http://my-otel-collector.svc.cluster.local:4317"
+	// https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/#otel_exporter_otlp_traces_endpoint
+	// +kubebuilder:validation:Required
+	EndPoint gwv1.AbsoluteURI `json:"endpoint"`
+
+	// Sampler defines the sampling strategy for OpenTelemetry traces.
+	// Sampling helps in reducing the volume of trace data by selectively
+	// recording only a subset of traces.
+	// https://opentelemetry.io/docs/languages/sdk-configuration/general/#otel_traces_sampler
+	// +kubebuilder:validation:option
+	Sampler OTelTracesSampler `json:"sampler,omitempty"`
+
+	// OTLPTimeout specifies timeout configurations for OTLP (OpenTelemetry Protocol) exports.
+	// It allows setting general and trace-specific timeouts for sending data.
+	// https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/#otel_exporter_otlp_traces_timeout
+	// +kubebuilder:validation:option
+	Timeout time.Duration `json:"timeout,omitempty"`
+
+	// OTLPProtocol specifies the protocol to be used for OTLP exports.
+	// This determines how tracing data is serialized and transported (e.g., gRPC, HTTP/Protobuf).
+	// https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/#otel_exporter_otlp_traces_protocol
+	// +kubebuilder:validation:option
+	Protocol OTLPTracesProtocolType `json:"protocol,omitempty"`
+
+	// TransportSecurity controls the TLS (Transport Layer Security) settings when connecting
+	// to the tracing server. It determines whether certificate verification should be skipped.
+	// +kubebuilder:validation:option
+	TransportSecurity OTLPTransportSecurityMode `json:"transportSecurity,omitempty"`
+}
+
+func (in *AiExtensionTrace) GetTimeout() *int64 {
+	if in == nil {
+		return nil
+	}
+	microseconds := in.Timeout.Microseconds()
+	return &microseconds
+}
+
+// OTelTracesSamplerType defines the available OpenTelemetry trace sampler types.
+// These samplers determine which traces are recorded and exported.
+type OTelTracesSamplerType string
+
+const (
+	// OTelTracesSamplerAlwaysOn enables always-on sampling.
+	// All traces will be recorded and exported. Useful for development or low-traffic systems.
+	OTelTracesSamplerAlwaysOn OTelTracesSamplerType = "always_on"
+
+	// OTelTracesSamplerAlwaysOff enables always-off sampling.
+	// No traces will be recorded or exported. Effectively disables tracing.
+	OTelTracesSamplerAlwaysOff OTelTracesSamplerType = "always_off"
+
+	// OTelTracesSamplerTraceidratio enables trace ID ratio based sampling.
+	// Traces are sampled based on a configured probability derived from their trace ID.
+	OTelTracesSamplerTraceidratio OTelTracesSamplerType = "traceidratio"
+
+	// OTelTracesSamplerParentbasedAlwaysOn enables parent-based always-on sampling.
+	// If a parent span exists and is sampled, the child span is also sampled.
+	OTelTracesSamplerParentbasedAlwaysOn OTelTracesSamplerType = "parentbased_always_on"
+
+	// OTelTracesSamplerParentbasedAlwaysOff enables parent-based always-off sampling.
+	// If a parent span exists and is not sampled, the child span is also not sampled.
+	OTelTracesSamplerParentbasedAlwaysOff OTelTracesSamplerType = "parentbased_always_off"
+
+	// OTelTracesSamplerParentbasedTraceidratio enables parent-based trace ID ratio sampling.
+	// If a parent span exists and is sampled, the child span is also sampled.
+	OTelTracesSamplerParentbasedTraceidratio OTelTracesSamplerType = "parentbased_traceidratio"
+)
+
+func (otelSamplerType OTelTracesSamplerType) String() string {
+	switch otelSamplerType {
+	case OTelTracesSamplerAlwaysOn:
+		return "always_on"
+	case OTelTracesSamplerAlwaysOff:
+		return "always_off"
+	case OTelTracesSamplerTraceidratio:
+		return "traceidratio"
+	case OTelTracesSamplerParentbasedAlwaysOn:
+		return "parentbased_always_on"
+	case OTelTracesSamplerParentbasedAlwaysOff:
+		return "parentbased_always_off"
+	case OTelTracesSamplerParentbasedTraceidratio:
+		return "parentbased_traceidratio"
+	default:
+		return ""
+	}
+}
+
+// OTelTracesSampler defines the configuration for an OpenTelemetry trace sampler.
+// It combines the sampler type with any required arguments for that type.
+type OTelTracesSampler struct {
+	// SamplerType specifies the type of sampler to use (default value: "parentbased_always_on").
+	// Refer to OTelTracesSamplerType for available options.
+	// https://opentelemetry.io/docs/languages/sdk-configuration/general/#otel_traces_sampler
+	SamplerType OTelTracesSamplerType `json:"type"`
+	// SamplerArg provides an argument for the chosen sampler type.
+	// For "traceidratio" or "parentbased_traceidratio" samplers: Sampling probability, a number in the [0..1] range,
+	// e.g. 0.25. Default is 1.0 if unset.
+	// https://opentelemetry.io/docs/languages/sdk-configuration/general/#otel_traces_sampler_arg
+	SamplerArg string `json:"arg"`
+}
+
+func (in *AiExtensionTrace) GetSampler() *OTelTracesSampler {
+	if in == nil {
+		return nil
+	}
+	return &in.Sampler
+}
+
+func (in *AiExtensionTrace) GetSamplerType() string {
+	if in == nil {
+		return ""
+	}
+	return in.GetSampler().SamplerType.String()
+}
+
+func (in *AiExtensionTrace) GetSamplerArg() string {
+	if in == nil {
+		return ""
+	}
+	return in.GetSampler().SamplerArg
+}
+
+// OTLPTracesProtocolType defines the supported protocols for OTLP exporter.
+type OTLPTracesProtocolType string
+
+const (
+	// OTLPTracesProtocolTypeGrpc specifies OTLP over gRPC protocol.
+	// This is typically the most efficient protocol for OpenTelemetry data transfer.
+	OTLPTracesProtocolTypeGrpc OTLPTracesProtocolType = "grpc"
+	// OTLPTracesProtocolTypeProtobuf specifies OTLP over HTTP with Protobuf serialization.
+	// Data is sent via HTTP POST requests with Protobuf message bodies.
+	OTLPTracesProtocolTypeProtobuf OTLPTracesProtocolType = "http/protobuf"
+	// OTLPTracesProtocolTypeJson specifies OTLP over HTTP with JSON serialization.
+	// Data is sent via HTTP POST requests with JSON message bodies.
+	OTLPTracesProtocolTypeJson OTLPTracesProtocolType = "http/json"
+)
+
+func (in *AiExtensionTrace) GetOTLPProtocolType() string {
+	if in == nil {
+		return ""
+	}
+	return in.Protocol.String()
+}
+
+func (otelProtocolType OTLPTracesProtocolType) String() string {
+	switch otelProtocolType {
+	case OTLPTracesProtocolTypeGrpc:
+		return "grpc"
+	case OTLPTracesProtocolTypeProtobuf:
+		return "http/protobuf"
+	case OTLPTracesProtocolTypeJson:
+		return "http/json"
+	default:
+		return ""
+	}
+}
+
+// OTLPTransportSecurityMode defines the transport security options for OTLP connections.
+type OTLPTransportSecurityMode string
+
+const (
+	// OTLPTransportSecuritySecure enables TLS (client transport security) for OTLP connections.
+	// This means the client will verify the server's certificate.
+	OTLPTransportSecuritySecure OTLPTransportSecurityMode = "secure"
+
+	// OTLPTransportSecurityInsecure disables TLS for OTLP connections,
+	// meaning certificate verification is skipped. This is generally not recommended
+	// for production environments due to security risks.
+	OTLPTransportSecurityInsecure OTLPTransportSecurityMode = "insecure"
+)
+
+func (otelTransportSecurityMode OTLPTransportSecurityMode) String() string {
+	switch otelTransportSecurityMode {
+	case OTLPTransportSecuritySecure:
+		return "secure"
+	case OTLPTransportSecurityInsecure:
+		return "insecure"
+	default:
+		return ""
+	}
+}
+
+func (in *AiExtensionTrace) GetTransportSecurityMode() string {
+	if in == nil {
+		return ""
+	}
+	return in.TransportSecurity.String()
 }
 
 // AgentGateway configures the AgentGateway integration. If AgentGateway is enabled, Envoy
