@@ -456,6 +456,36 @@ spec:
                               type: object
                             type: array
                         type: object
+                      tracing:
+                        properties:
+                          enabled:
+                            type: boolean
+                          endpoint:
+                            maxLength: 253
+                            minLength: 1
+                            pattern: ^(([^:/?#]+):)(//([^/?#]*))([^?#]*)(\?([^#]*))?(#(.*))?
+                            type: string
+                          protocol:
+                            type: string
+                          sampler:
+                            properties:
+                              arg:
+                                type: string
+                              type:
+                                type: string
+                            required:
+                            - arg
+                            - type
+                            type: object
+                          timeout:
+                            format: int64
+                            type: integer
+                          transportSecurity:
+                            type: string
+                        required:
+                        - enabled
+                        - endpoint
+                        type: object
                     type: object
                   deployment:
                     properties:

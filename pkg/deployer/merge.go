@@ -718,7 +718,24 @@ func deepMergeAIExtension(dst, src *v1alpha1.AiExtension) *v1alpha1.AiExtension 
 	dst.Env = DeepMergeSlices(dst.GetEnv(), src.GetEnv())
 	dst.Ports = DeepMergeSlices(dst.GetPorts(), src.GetPorts())
 	dst.Stats = deepMergeAIExtensionStats(dst.GetStats(), src.GetStats())
+	dst.Tracing = deepMergeAIExtensionTracing(dst.GetTracing(), src.GetTracing())
+	return dst
+}
 
+func deepMergeAIExtensionTracing(dst, src *v1alpha1.AiExtensionTrace) *v1alpha1.AiExtensionTrace {
+	// nil src override means just use dst
+	if src == nil {
+		return dst
+	}
+	if dst == nil {
+		return src
+	}
+	dst.Enabled = mergePointers(dst.Enabled, src.Enabled)
+	dst.EndPoint = mergeComparable(dst.EndPoint, src.EndPoint)
+	dst.Sampler = mergeComparable(dst.Sampler, src.Sampler)
+	dst.Timeout = mergeComparable(dst.Timeout, dst.Timeout)
+	dst.Protocol = mergeComparable(dst.Protocol, dst.Protocol)
+	dst.TransportSecurity = mergeComparable(dst.TransportSecurity, dst.TransportSecurity)
 	return dst
 }
 

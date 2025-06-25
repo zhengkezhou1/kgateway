@@ -29,6 +29,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.AiExtensionApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AiExtensionStats"):
 		return &apiv1alpha1.AiExtensionStatsApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AiExtensionTrace"):
+		return &apiv1alpha1.AiExtensionTraceApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AIPolicy"):
 		return &apiv1alpha1.AIPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AIPromptEnrichment"):
@@ -173,6 +175,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.MultiPoolConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("OpenAIConfig"):
 		return &apiv1alpha1.OpenAIConfigApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("OTelTracesSampler"):
+		return &apiv1alpha1.OTelTracesSamplerApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Parameters"):
 		return &apiv1alpha1.ParametersApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("PathOverride"):
