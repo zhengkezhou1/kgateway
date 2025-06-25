@@ -604,6 +604,7 @@ func mergePolicies(policies []ir.PolicyAtt) ir.PolicyAtt {
 		mergeOrigins := MergeTrafficPolicies(merged, p2, p2Ref, mergeOpts)
 		maps.Copy(out.MergeOrigins, mergeOrigins)
 		out.HierarchicalPriority = policies[i].HierarchicalPriority
+		out.Errors = append(out.Errors, policies[i].Errors...)
 	}
 
 	return out
