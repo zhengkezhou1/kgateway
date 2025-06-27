@@ -29,8 +29,11 @@ type BackendConfigPolicyList struct {
 	Items           []BackendConfigPolicy `json:"items"`
 }
 
-// +kubebuilder:validation:XValidation:rule="!has(self.http1ProtocolOptions) || !has(self.http2ProtocolOptions)",message="Http1ProtocolOptions and Http2ProtocolOptions cannot both be set"
+// BackendConfigPolicySpec defines the desired state of BackendConfigPolicy.
+// +kubebuilder:validation:AtMostOneOf=http1ProtocolOptions;http2ProtocolOptions
 type BackendConfigPolicySpec struct {
+	// TargetRefs specifies the target references to attach the policy to.
+	// +optional
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
 	TargetRefs []LocalPolicyTargetReference `json:"targetRefs,omitempty"`

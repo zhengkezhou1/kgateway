@@ -44,6 +44,27 @@ spec:
 `,
 			wantError: "exactly one of the fields in [ai aws static dynamicForwardProxy] must be set",
 		},
+		{
+			name: "BackendConfigPolicy: enforce AtMostOneOf for HTTP protocol options",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-both-http-options
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  http1ProtocolOptions:
+    enableTrailers: true
+    headerFormat: ProperCaseHeaderKeyFormat
+  http2ProtocolOptions:
+    maxConcurrentStreams: 100
+    overrideStreamErrorOnInvalidHttpMessage: true
+`,
+			wantError: "at most one of the fields in [http1ProtocolOptions http2ProtocolOptions] may be set",
+		},
 	}
 
 	t.Cleanup(func() {

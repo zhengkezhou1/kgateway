@@ -370,9 +370,10 @@ spec:
                     == 1'
             type: object
             x-kubernetes-validations:
-            - message: Http1ProtocolOptions and Http2ProtocolOptions cannot both be
-                set
-              rule: '!has(self.http1ProtocolOptions) || !has(self.http2ProtocolOptions)'
+            - message: at most one of the fields in [http1ProtocolOptions http2ProtocolOptions]
+                may be set
+              rule: '[has(self.http1ProtocolOptions),has(self.http2ProtocolOptions)].filter(x,x==true).size()
+                <= 1'
           status:
             properties:
               ancestors:
