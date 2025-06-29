@@ -11,6 +11,7 @@ from opentelemetry.trace import Tracer, NoOpTracer
 from opentelemetry.sdk.trace import TracerProvider
 from opentelemetry.sdk.trace.export import (
     BatchSpanProcessor,
+    ConsoleSpanExporter
 )
 from opentelemetry.sdk.resources import (
     SERVICE_NAME,
@@ -61,8 +62,11 @@ class Config(BaseModel):
             )
             tracer_provider.add_span_processor(span_processor)
         else:
-            logger.warning("No gRPC configuration found. Tracing will not be enabled.")
-            tracer_provider._disabled = True
+            logger.warning("No gRPC configuration found. using console.")
+            span_processor = BatchSpanProcessor(
+                            OTLPSpanExporter(endpoint="http://tempo.default:4317", insecure=True)
+                        )
+            tracer_provider.add_span_processor(span_processor)
 
         return tracer_provider.get_tracer(__name__)
 

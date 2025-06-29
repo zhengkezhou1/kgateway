@@ -1,6 +1,7 @@
 import os
 import sys
 import asyncio
+import time
 import traceback
 from contextlib import contextmanager
 from copy import deepcopy
@@ -140,6 +141,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
         request_iterator: AsyncIterable[external_processor_pb2.ProcessingRequest],
         context: grpc.ServicerContext,
     ) -> AsyncIterable[external_processor_pb2.ProcessingResponse]:
+        parent_ai_span = OtelTracer.get().start_as_current_span("process_requests")
         handler = StreamHandler.from_metadata(dict(context.invocation_metadata()))
         handler.logger.debug(
             "Received a processing request %s", context.invocation_metadata()
@@ -446,9 +448,27 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
             )
 
             body = body_jsn
+            operation_name = handler.req.path
+            span_name = f"{operation_name} {handler.request_model}"
+            
             with OtelTracer.get().start_as_current_span(
-                "count_tokens",
+                span_name,
                 context=trace.set_span_in_context(parent_span),
+                attributes={
+                    "gen_ai.operation.name" : operation_name,
+                    "gen_ai.system": handler.llm_provider,
+                    "gen_ai.output.type": body.get("response_format", {}).get("type", ""),
+                    "gen_ai.request.choice.count": body.get("n", 0),
+                    "gen_ai.request.model": handler.request_model,
+                    "gen_ai.request.seed": body.get("seed", 0),
+                    "gen_ai.request.frequency_penalty": body.get("frequency_penalty", 0),
+                    "gen_ai.request.max_tokens": body.get("max_tokens", 0),
+                    "gen_ai.request.presence_penalty": body.get("presence_penalty", 0),
+                    "gen_ai.request.stop_sequences": body.get("stop", []),
+                    "gen_ai.request.temperature": body.get("temperature", 0),
+                    "gen_ai.request.top_k": body.get("top_k", 0),
+                    "gen_ai.request.top_p": body.get("top_p", 0),
+                }
             ):
                 tokens = handler.provider.get_num_tokens_from_body(body)
 
@@ -584,6 +604,40 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
 
                     body_str = full_body.decode("utf-8")
                     jsn = json.loads(body_str)
+
+                    finish_reason = ""
+
+                    if isinstance(jsn.get("choices"), list) and len(jsn["choices"]) > 0:
+                        first_choice = jsn["choices"][0]
+                        if isinstance(first_choice, dict):
+                            finish_reason = first_choice.get("finish_reason", "")
+
+                    prompt_tokens = 0
+                    if isinstance(jsn.get("usage"), dict):
+                        prompt_tokens = jsn["usage"].get("prompt_tokens", 0)
+
+                    completion_tokens = 0
+                    if isinstance(jsn.get("usage"), dict):
+                        completion_tokens = jsn["usage"].get("completion_tokens", 0)
+
+                    operation_name = handler.req.path
+                    model_name = jsn.get("model", "")
+                    span_name = f"{operation_name} - {model_name}"
+                    
+                    with OtelTracer.get().start_as_current_span(
+                    span_name,
+                    context=trace.set_span_in_context(parent_span),
+                    attributes={
+                        "gen_ai.operation.name": operation_name,
+                        "gen_ai.system": handler.llm_provider,
+                        "gen_ai.response.id": jsn.get("id", ""),
+                        "gen_ai.response.model": model_name,
+                        "gen_ai.response.finish_reasons": finish_reason, 
+                        "gen_ai.usage.input_tokens": prompt_tokens,
+                        "gen_ai.usage.output_tokens": completion_tokens,
+                    }
+                ):
+                        pass
                 except json.decoder.JSONDecodeError as exc:
                     # This could be we are getting an error response that's not json in the body
                     handler.logger.debug("Error decoding json: %s", exc)

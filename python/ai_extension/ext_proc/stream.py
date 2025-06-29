@@ -55,6 +55,12 @@ class Info:
     For req, is_streaming is set after handle_request_body.
     For resp, this is set after we handled response_headers.
     """
+    
+    path: str = ""
+    """
+    path is the request path from the :path pseudo header
+    This is set while we are looping through the header in set_header()
+    """
 
     def append(self, data: bytes):
         """
@@ -80,6 +86,10 @@ class Info:
                 self.content_type, self.encoding = parse_content_type(
                     header.raw_value.decode("utf-8")
                 )
+            # Capture the path from pseudo header but don't add it to headers
+            if header.key == ":path":
+                self.path = header.raw_value.decode("utf-8")
+                continue
             # Never pass through pseudo headers
             if header.key.startswith(":"):
                 continue
