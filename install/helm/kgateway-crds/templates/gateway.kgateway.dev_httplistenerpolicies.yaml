@@ -460,6 +460,14 @@ spec:
                   type: object
                 maxItems: 16
                 type: array
+              serverHeaderTransformation:
+                enum:
+                - Overwrite
+                - AppendIfAbsent
+                - PassThrough
+                type: string
+              streamIdleTimeout:
+                type: string
               targetRefs:
                 items:
                   properties:
@@ -514,6 +522,12 @@ spec:
                     minItems: 1
                     type: array
                 type: object
+              useRemoteAddress:
+                type: boolean
+              xffNumTrustedHops:
+                format: int32
+                minimum: 0
+                type: integer
             type: object
           status:
             properties:
