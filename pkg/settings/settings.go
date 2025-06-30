@@ -6,6 +6,35 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
+// RouteReplacementMode determines how invalid routes are handled during translation.
+// Higher modes increase safety guarantees, but may have performance implications.
+type RouteReplacementMode string
+
+const (
+	// RouteReplacementStandard rewrites invalid routes to direct responses
+	// (typically HTTP 500), preserving a valid config while isolating failures.
+	// This limits the blast radius of misconfigured routes or policies without
+	// affecting unrelated tenants.
+	RouteReplacementStandard RouteReplacementMode = "STANDARD"
+	// RouteReplacementStrict builds on STANDARD by running targeted validation
+	// (e.g. RDS, CDS, and security-related policies). Routes that fail these
+	// checks are also replaced with direct responses, and helps prevent unsafe
+	// config from reaching Envoy.
+	RouteReplacementStrict RouteReplacementMode = "STRICT"
+)
+
+// Decode implements envconfig.Decoder.
+func (m *RouteReplacementMode) Decode(value string) error {
+	mode := RouteReplacementMode(value)
+	switch mode {
+	case RouteReplacementStandard, RouteReplacementStrict:
+		*m = mode
+		return nil
+	default:
+		return fmt.Errorf("invalid route replacement mode: %q", value)
+	}
+}
+
 // DnsLookupFamily controls the DNS lookup family for all static clusters created via Backend resources.
 type DnsLookupFamily string
 
@@ -116,6 +145,12 @@ type Settings struct {
 	// If two routes have the same weight, Gateway API route precedence rules apply.
 	// When enabled, the default weight for a route is 0.
 	WeightedRoutePrecedence bool `split_words:"true" default:"false"`
+
+	// RouteReplacementMode determines how invalid routes are handled during translation.
+	// If not set, kgateway will default to "STANDARD". Supported values are:
+	// - "STANDARD": Rewrites invalid routes to direct responses (typically HTTP 500)
+	// - "STRICT": Builds on STANDARD by running targeted validation
+	RouteReplacementMode RouteReplacementMode `split_words:"true" default:"STANDARD"`
 }
 
 // BuildSettings returns a zero-valued Settings obj if error is encountered when parsing env

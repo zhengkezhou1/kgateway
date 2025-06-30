@@ -22,13 +22,15 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/logging"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
+	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 )
 
 var logger = logging.New("translator/ir")
 
 type Translator struct {
-	ContributedPolicies map[schema.GroupKind]extensionsplug.PolicyPlugin
-	metrics             metrics.TranslatorMetricsRecorder
+	ContributedPolicies  map[schema.GroupKind]extensionsplug.PolicyPlugin
+	RouteReplacementMode settings.RouteReplacementMode
+	metrics              metrics.TranslatorMetricsRecorder
 }
 
 type TranslationPassPlugins map[schema.GroupKind]*TranslationPass
@@ -116,6 +118,7 @@ func (t *Translator) ComputeListener(
 			requireTlsOnVirtualHosts: hfc.FilterChainCommon.TLS != nil,
 			PluginPass:               pass,
 			logger:                   logger.With("route_config_name", hfc.FilterChainName),
+			routeReplacementMode:     t.RouteReplacementMode,
 		}
 		rc := hr.ComputeRouteConfiguration(ctx, hfc.Vhosts)
 		if rc != nil {
