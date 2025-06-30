@@ -57,7 +57,7 @@ func TestShouldUseDefaultGatewayParameters(t *testing.T) {
 			APIVersion: "gateway.networking.k8s.io",
 		},
 		Spec: api.GatewaySpec{
-			GatewayClassName: wellknown.GatewayClassName,
+			GatewayClassName: wellknown.DefaultGatewayClassName,
 		},
 	}
 
@@ -92,7 +92,7 @@ func TestShouldUseExtendedGatewayParameters(t *testing.T) {
 					Name:  "testing",
 				},
 			},
-			GatewayClassName: wellknown.GatewayClassName,
+			GatewayClassName: wellknown.DefaultGatewayClassName,
 		},
 	}
 
@@ -110,7 +110,7 @@ func TestGatewayGVKsToWatch(t *testing.T) {
 	cli := newFakeClientWithObjs(gwc, gwParams)
 	gwp := NewGatewayParameters(cli, defaultInputs(t, gwc))
 
-	d, err := NewGatewayDeployer(wellknown.GatewayControllerName, cli, gwp)
+	d, err := NewGatewayDeployer(wellknown.DefaultGatewayControllerName, cli, gwp)
 	assert.NoError(t, err)
 
 	gvks, err := GatewayGVKsToWatch(context.TODO(), d)
@@ -129,7 +129,7 @@ func TestInferencePoolGVKsToWatch(t *testing.T) {
 	gwParams := emptyGatewayParameters()
 	cli := newFakeClientWithObjs(gwc, gwParams)
 
-	d, err := NewInferencePoolDeployer(wellknown.GatewayControllerName, cli)
+	d, err := NewInferencePoolDeployer(wellknown.DefaultGatewayControllerName, cli)
 	assert.NoError(t, err)
 
 	gvks, err := InferencePoolGVKsToWatch(context.TODO(), d)
@@ -146,10 +146,10 @@ func TestInferencePoolGVKsToWatch(t *testing.T) {
 func defaultGatewayClass() *api.GatewayClass {
 	return &api.GatewayClass{
 		ObjectMeta: metav1.ObjectMeta{
-			Name: wellknown.GatewayClassName,
+			Name: wellknown.DefaultGatewayClassName,
 		},
 		Spec: api.GatewayClassSpec{
-			ControllerName: wellknown.GatewayControllerName,
+			ControllerName: wellknown.DefaultGatewayControllerName,
 			ParametersRef: &api.ParametersReference{
 				Group:     gw2_v1alpha1.GroupName,
 				Kind:      api.Kind(wellknown.GatewayParametersGVK.Kind),
@@ -187,6 +187,9 @@ func defaultInputs(t *testing.T, objs ...client.Object) *deployer.Inputs {
 			Registry: "foo",
 			Tag:      "bar",
 		},
+		GatewayClassName:         wellknown.DefaultGatewayClassName,
+		WaypointGatewayClassName: wellknown.DefaultWaypointClassName,
+		AgentGatewayClassName:    wellknown.DefaultAgentGatewayClassName,
 	}
 }
 
@@ -231,7 +234,7 @@ func newCommonCols(t test.Failer, initObjs ...client.Object) *common.CommonColle
 	nsCol := krtcollections.NewNamespaceCollectionFromCol(ctx, krttest.GetMockCollection[*corev1.Namespace](mock), krtutil.KrtOptions{})
 
 	krtopts := krtutil.NewKrtOptions(ctx.Done(), nil)
-	gateways := krtcollections.NewGatewayIndex(krtopts, wellknown.GatewayControllerName, policies, kubeRawGateways, kubeRawListenerSets, gatewayClasses, nsCol)
+	gateways := krtcollections.NewGatewayIndex(krtopts, wellknown.DefaultGatewayControllerName, policies, kubeRawGateways, kubeRawListenerSets, gatewayClasses, nsCol)
 
 	commonCols := &common.CommonCollections{
 		GatewayIndex: gateways,

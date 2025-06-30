@@ -34,9 +34,27 @@ type Server interface {
 	Start(ctx context.Context) error
 }
 
-func WithGatewayControllerName(name func() string) func(*setup) {
+func WithGatewayControllerName(name string) func(*setup) {
 	return func(s *setup) {
-		s.gatewayControllerName = name()
+		s.gatewayControllerName = name
+	}
+}
+
+func WithGatewayClassName(name string) func(*setup) {
+	return func(s *setup) {
+		s.gatewayClassName = name
+	}
+}
+
+func WithWaypointClassName(name string) func(*setup) {
+	return func(s *setup) {
+		s.waypointClassName = name
+	}
+}
+
+func WithAgentGatewayClassName(name string) func(*setup) {
+	return func(s *setup) {
+		s.agentGatewayClassName = name
 	}
 }
 
@@ -66,6 +84,9 @@ func WithExtraXDSCallbacks(extraXDSCallbacks xdsserver.Callbacks) func(*setup) {
 
 type setup struct {
 	gatewayControllerName  string
+	gatewayClassName       string
+	waypointClassName      string
+	agentGatewayClassName  string
 	extraPlugins           func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin
 	extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
 	addToScheme            func(s *runtime.Scheme) error
@@ -76,7 +97,10 @@ var _ Server = &setup{}
 
 func New(opts ...func(*setup)) *setup {
 	s := &setup{
-		gatewayControllerName: wellknown.GatewayControllerName,
+		gatewayControllerName: wellknown.DefaultGatewayControllerName,
+		gatewayClassName:      wellknown.DefaultGatewayClassName,
+		waypointClassName:     wellknown.DefaultWaypointClassName,
+		agentGatewayClassName: wellknown.DefaultAgentGatewayClassName,
 	}
 	for _, opt := range opts {
 		opt(s)
@@ -86,24 +110,30 @@ func New(opts ...func(*setup)) *setup {
 
 func (s *setup) Start(ctx context.Context) error {
 	if s.extraXDSCallbacks != nil {
-		return StartKgatewayWithXDSCallbacks(ctx, s.gatewayControllerName, s.extraPlugins, s.extraGatewayParameters, s.addToScheme, s.extraXDSCallbacks)
+		return StartKgatewayWithXDSCallbacks(ctx, s.gatewayControllerName, s.gatewayClassName, s.waypointClassName, s.agentGatewayClassName, s.extraPlugins, s.extraGatewayParameters, s.addToScheme, s.extraXDSCallbacks)
 	}
 
-	return StartKgateway(ctx, s.gatewayControllerName, s.extraPlugins, s.extraGatewayParameters, s.addToScheme)
+	return StartKgateway(ctx, s.gatewayControllerName, s.gatewayClassName, s.waypointClassName, s.agentGatewayClassName, s.extraPlugins, s.extraGatewayParameters, s.addToScheme)
 }
 
 func StartKgateway(
 	ctx context.Context,
 	gatewayControllerName string,
+	gatewayClassName string,
+	waypointClassName string,
+	agentGatewayClassName string,
 	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin,
 	extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters,
 	addToScheme func(s *runtime.Scheme) error,
 ) error {
-	return StartKgatewayWithXDSCallbacks(ctx, gatewayControllerName, extraPlugins, extraGatewayParameters, addToScheme, nil)
+	return StartKgatewayWithXDSCallbacks(ctx, gatewayControllerName, gatewayClassName, waypointClassName, agentGatewayClassName, extraPlugins, extraGatewayParameters, addToScheme, nil)
 }
 
 func StartKgatewayWithXDSCallbacks(ctx context.Context,
 	gatewayControllerName string,
+	gatewayClassName string,
+	waypointClassName string,
+	agentGatewayClassName string,
 	extraPlugins func(ctx context.Context, commoncol *common.CommonCollections) []sdk.Plugin,
 	extraGatewayParameters func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters,
 	addToScheme func(s *runtime.Scheme) error,
@@ -137,6 +167,9 @@ func StartKgatewayWithXDSCallbacks(ctx context.Context,
 	return StartKgatewayWithConfig(
 		ctx,
 		gatewayControllerName,
+		gatewayClassName,
+		waypointClassName,
+		agentGatewayClassName,
 		setupOpts,
 		restConfig,
 		uccBuilder,
@@ -157,6 +190,9 @@ func startControlPlane(
 func StartKgatewayWithConfig(
 	ctx context.Context,
 	gatewayControllerName string,
+	gatewayClassName string,
+	waypointClassName string,
+	agentGatewayClassName string,
 	setupOpts *controller.SetupOpts,
 	restConfig *rest.Config,
 	uccBuilder krtcollections.UniquelyConnectedClientsBulider,
@@ -188,17 +224,20 @@ func StartKgatewayWithConfig(
 
 	slog.Info("initializing controller")
 	c, err := controller.NewControllerBuilder(ctx, controller.StartConfig{
-		ControllerName:         gatewayControllerName,
-		ExtraPlugins:           extraPlugins,
-		ExtraGatewayParameters: extraGatewayParameters,
-		AddToScheme:            addToScheme,
-		RestConfig:             restConfig,
-		SetupOpts:              setupOpts,
-		Client:                 kubeClient,
-		AugmentedPods:          augmentedPods,
-		UniqueClients:          ucc,
-		Dev:                    logging.MustGetLevel(logging.DefaultComponent) <= logging.LevelTrace,
-		KrtOptions:             krtOpts,
+		ControllerName:           gatewayControllerName,
+		GatewayClassName:         gatewayClassName,
+		WaypointGatewayClassName: waypointClassName,
+		AgentGatewayClassName:    agentGatewayClassName,
+		ExtraPlugins:             extraPlugins,
+		ExtraGatewayParameters:   extraGatewayParameters,
+		AddToScheme:              addToScheme,
+		RestConfig:               restConfig,
+		SetupOpts:                setupOpts,
+		Client:                   kubeClient,
+		AugmentedPods:            augmentedPods,
+		UniqueClients:            ucc,
+		Dev:                      logging.MustGetLevel(logging.DefaultComponent) <= logging.LevelTrace,
+		KrtOptions:               krtOpts,
 	})
 	if err != nil {
 		slog.Error("failed initializing controller: ", "error", err)

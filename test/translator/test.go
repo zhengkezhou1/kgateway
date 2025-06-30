@@ -486,14 +486,18 @@ func (tc TestCase) Run(
 	defer cancel()
 
 	// ensure classes used in tests exist and point at our controller
-	gwClasses := append(wellknown.BuiltinGatewayClasses.UnsortedList(), "example-gateway-class")
+	gwClasses := []string{
+		wellknown.DefaultGatewayClassName,
+		wellknown.DefaultWaypointClassName,
+		"example-gateway-class",
+	}
 	for _, className := range gwClasses {
 		cli.GatewayAPI().GatewayV1().GatewayClasses().Create(ctx, &gwv1.GatewayClass{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: string(className),
 			},
 			Spec: gwv1.GatewayClassSpec{
-				ControllerName: wellknown.GatewayControllerName,
+				ControllerName: wellknown.DefaultGatewayControllerName,
 			},
 		}, metav1.CreateOptions{})
 	}
@@ -516,7 +520,7 @@ func (tc TestCase) Run(
 		cli,
 		ourCli,
 		nil,
-		wellknown.GatewayControllerName,
+		wellknown.DefaultGatewayControllerName,
 		logr.Discard(),
 		*settings,
 	)
@@ -524,7 +528,7 @@ func (tc TestCase) Run(
 		return nil, err
 	}
 
-	plugins := registry.Plugins(ctx, commoncol)
+	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultWaypointClassName)
 	// TODO: consider moving the common code to a util that both proxy syncer and this test call
 	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
 

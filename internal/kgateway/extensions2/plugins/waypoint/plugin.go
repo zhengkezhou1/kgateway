@@ -28,6 +28,7 @@ var VirtualWaypointGK = schema.GroupKind{
 func NewPlugin(
 	ctx context.Context,
 	commonCols *common.CommonCollections,
+	waypointGatewayClassName string,
 ) extensionsplug.Plugin {
 	queries := query.NewData(
 		commonCols,
@@ -38,7 +39,7 @@ func NewPlugin(
 	)
 	plugin := extensionsplug.Plugin{
 		ContributesGwTranslator: func(gw *gwv1.Gateway) extensionsplug.KGwTranslator {
-			if gw.Spec.GatewayClassName != wellknown.WaypointClassName {
+			if string(gw.Spec.GatewayClassName) != waypointGatewayClassName {
 				return nil
 			}
 
@@ -55,8 +56,9 @@ func NewPlugin(
 	// backend addresses (VIPs) as the endpoints. This will cause the traffic from the ingress to be
 	// redirected to the waypoint by the ztunnel.
 	pcp := &PerClientProcessor{
-		waypointQueries: waypointQueries,
-		commonCols:      commonCols,
+		waypointQueries:          waypointQueries,
+		commonCols:               commonCols,
+		waypointGatewayClassName: waypointGatewayClassName,
 	}
 	if commonCols.Settings.IngressUseWaypoints {
 		plugin.ContributesPolicies = map[schema.GroupKind]extensionsplug.PolicyPlugin{
@@ -73,8 +75,9 @@ func NewPlugin(
 }
 
 type PerClientProcessor struct {
-	waypointQueries waypointquery.WaypointQueries
-	commonCols      *common.CommonCollections
+	waypointQueries          waypointquery.WaypointQueries
+	commonCols               *common.CommonCollections
+	waypointGatewayClassName string
 }
 
 func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context.Context, ucc ir.UniqlyConnectedClient, in ir.BackendObjectIR, out *envoy_config_cluster_v3.Cluster) {
@@ -86,7 +89,7 @@ func (t *PerClientProcessor) processBackend(kctx krt.HandlerContext, ctx context
 		Namespace: ucc.Namespace,
 	}
 	gwir := krt.FetchOne(kctx, t.commonCols.GatewayIndex.Gateways, krt.FilterKey(gwKey.ResourceName()))
-	if gwir == nil || gwir.Obj == nil || gwir.Obj.Spec.GatewayClassName == wellknown.WaypointClassName {
+	if gwir == nil || gwir.Obj == nil || string(gwir.Obj.Spec.GatewayClassName) == t.waypointGatewayClassName {
 		// no op
 		return
 	}

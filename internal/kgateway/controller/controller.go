@@ -75,6 +75,12 @@ type GatewayConfig struct {
 	DiscoveryNamespaceFilter kubetypes.DynamicObjectFilter
 	// CommonCollections used to fetch ir.Gateways for the deployer to generate the ports for the proxy service
 	CommonCollections *common.CommonCollections
+	// GatewayClassName is the configured gateway class name.
+	GatewayClassName string
+	// WaypointGatewayClassName is the configured waypoint gateway class name.
+	WaypointGatewayClassName string
+	// AgentGatewayClassName is the configured agent gateway class name.
+	AgentGatewayClassName string
 }
 
 type ExtraGatewayParametersFunc func(cli client.Client, inputs *deployer.Inputs) []deployer.ExtraGatewayParameters
@@ -187,11 +193,14 @@ func (c *controllerBuilder) watchGw(ctx context.Context) error {
 
 	log.Info("creating gateway deployer", "ctrlname", c.cfg.ControllerName, "server", c.cfg.ControlPlane.XdsHost, "port", c.cfg.ControlPlane.XdsPort)
 	inputs := &deployer.Inputs{
-		Dev:                  c.cfg.Dev,
-		IstioAutoMtlsEnabled: c.cfg.IstioAutoMtlsEnabled,
-		ControlPlane:         c.cfg.ControlPlane,
-		ImageInfo:            c.cfg.ImageInfo,
-		CommonCollections:    c.cfg.CommonCollections,
+		Dev:                      c.cfg.Dev,
+		IstioAutoMtlsEnabled:     c.cfg.IstioAutoMtlsEnabled,
+		ControlPlane:             c.cfg.ControlPlane,
+		ImageInfo:                c.cfg.ImageInfo,
+		CommonCollections:        c.cfg.CommonCollections,
+		GatewayClassName:         c.cfg.GatewayClassName,
+		WaypointGatewayClassName: c.cfg.WaypointGatewayClassName,
+		AgentGatewayClassName:    c.cfg.AgentGatewayClassName,
 	}
 	gwParams := internaldeployer.NewGatewayParameters(c.cfg.Mgr.GetClient(), inputs)
 	if c.extraGatewayParameters != nil {

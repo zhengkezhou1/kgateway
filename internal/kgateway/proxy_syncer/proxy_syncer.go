@@ -50,7 +50,8 @@ import (
 // resulting in each connected proxy getting the correct configuration.
 // ProxySyncer also syncs status resulting from translation to K8s apiserver.
 type ProxySyncer struct {
-	controllerName string
+	controllerName        string
+	agentGatewayClassName string
 
 	mgr        manager.Manager
 	commonCols *common.CommonCollections
@@ -145,9 +146,11 @@ func NewProxySyncer(
 	mergedPlugins plug.Plugin,
 	commonCols *common.CommonCollections,
 	xdsCache envoycache.SnapshotCache,
+	agentGatewayClassName string,
 ) *ProxySyncer {
 	return &ProxySyncer{
 		controllerName:        controllerName,
+		agentGatewayClassName: agentGatewayClassName,
 		commonCols:            commonCols,
 		mgr:                   mgr,
 		istioClient:           client,
@@ -215,7 +218,7 @@ func (s *ProxySyncer) Init(ctx context.Context, krtopts krtutil.KrtOptions) {
 
 	s.mostXdsSnapshots = krt.NewCollection(s.commonCols.GatewayIndex.Gateways, func(kctx krt.HandlerContext, gw ir.Gateway) *GatewayXdsResources {
 		// skip agentgateway proxies as they are not envoy-based gateways
-		if gw.Obj.Spec.GatewayClassName == wellknown.AgentGatewayClassName {
+		if string(gw.Obj.Spec.GatewayClassName) == s.agentGatewayClassName {
 			logger.Debug("skipping envoy proxy sync for agentgateway %s.%s", gw.Obj.Name, gw.Obj.Namespace)
 			return nil
 		}

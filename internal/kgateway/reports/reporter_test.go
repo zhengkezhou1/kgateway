@@ -146,7 +146,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 
 				reporter := reports.NewReporter(&rm)
 				fakeTranslate(reporter, obj)
-				status := rm.BuildRouteStatus(ctx, obj, wellknown.GatewayControllerName)
+				status := rm.BuildRouteStatus(ctx, obj, wellknown.DefaultGatewayControllerName)
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(1))
@@ -165,7 +165,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 
 				reporter := reports.NewReporter(&rm)
 				fakeTranslate(reporter, obj)
-				status := rm.BuildRouteStatus(ctx, obj, wellknown.GatewayControllerName)
+				status := rm.BuildRouteStatus(ctx, obj, wellknown.DefaultGatewayControllerName)
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(1))
@@ -239,7 +239,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 				// we only translate our parentRef
 				reporter.Route(obj).ParentRef(parentRef())
 
-				status := rm.BuildRouteStatus(ctx, route, wellknown.GatewayControllerName)
+				status := rm.BuildRouteStatus(ctx, route, wellknown.DefaultGatewayControllerName)
 
 				Expect(status).NotTo(BeNil())
 				// 1 parent is ours, 1 parent is other
@@ -291,7 +291,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 					Reason: gwv1.RouteReasonBackendNotFound,
 				})
 
-				status := rm.BuildRouteStatus(context.Background(), obj, "kgateway")
+				status := rm.BuildRouteStatus(context.Background(), obj, wellknown.DefaultGatewayControllerName)
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(1))
@@ -322,7 +322,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 					Reason: gwv1.RouteReasonBackendNotFound,
 				})
 
-				status := rm.BuildRouteStatus(context.Background(), obj, "kgateway")
+				status := rm.BuildRouteStatus(context.Background(), obj, wellknown.DefaultGatewayControllerName)
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(1))
@@ -344,7 +344,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 
 				reporter := reports.NewReporter(&rm)
 				fakeTranslate(reporter, obj)
-				status := rm.BuildRouteStatus(context.Background(), obj, wellknown.GatewayControllerName)
+				status := rm.BuildRouteStatus(context.Background(), obj, wellknown.DefaultGatewayControllerName)
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(1))
@@ -367,7 +367,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 					Fail(fmt.Sprintf("unsupported route type: %T", obj))
 				}
 
-				status = rm.BuildRouteStatus(context.Background(), obj, wellknown.GatewayControllerName)
+				status = rm.BuildRouteStatus(context.Background(), obj, wellknown.DefaultGatewayControllerName)
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(1))
@@ -413,7 +413,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 
 				fakeTranslate(reporter, obj)
 
-				status := rm.BuildRouteStatus(ctx, obj, wellknown.GatewayControllerName)
+				status := rm.BuildRouteStatus(ctx, obj, wellknown.DefaultGatewayControllerName)
 
 				Expect(status).NotTo(BeNil())
 				Expect(status.Parents).To(HaveLen(2))
@@ -464,8 +464,8 @@ var _ = Describe("Reporting Infrastructure", func() {
 				fakeTranslate(reporter, route1)
 				fakeTranslate(reporter, route2)
 
-				status1 := rm.BuildRouteStatus(ctx, route1, wellknown.GatewayControllerName)
-				status2 := rm.BuildRouteStatus(ctx, route2, wellknown.GatewayControllerName)
+				status1 := rm.BuildRouteStatus(ctx, route1, wellknown.DefaultGatewayControllerName)
+				status2 := rm.BuildRouteStatus(ctx, route2, wellknown.DefaultGatewayControllerName)
 
 				Expect(status1).NotTo(BeNil())
 				Expect(status1.Parents[0].Conditions).To(HaveLen(2))
@@ -514,7 +514,7 @@ var _ = Describe("Reporting Infrastructure", func() {
 			reporter := reports.NewReporter(&rm)
 
 			fakeTranslate(reporter, route)
-			status := rm.BuildRouteStatus(ctx, route, wellknown.GatewayControllerName)
+			status := rm.BuildRouteStatus(ctx, route, wellknown.DefaultGatewayControllerName)
 
 			Expect(status).NotTo(BeNil())
 			Expect(status.Parents).To(BeEmpty())
@@ -700,7 +700,7 @@ func httpRoute(conditions ...metav1.Condition) client.Object {
 		route.Status.Parents = append(route.Status.Parents, gwv1.RouteParentStatus{
 			ParentRef:      *parentRef(),
 			Conditions:     conditions,
-			ControllerName: wellknown.GatewayControllerName,
+			ControllerName: wellknown.DefaultGatewayControllerName,
 		})
 	}
 	return route
@@ -718,7 +718,7 @@ func tcpRoute(conditions ...metav1.Condition) client.Object {
 		route.Status.Parents = append(route.Status.Parents, gwv1.RouteParentStatus{
 			ParentRef:      *parentRef(),
 			Conditions:     conditions,
-			ControllerName: wellknown.GatewayControllerName,
+			ControllerName: wellknown.DefaultGatewayControllerName,
 		})
 	}
 	return route
@@ -736,7 +736,7 @@ func tlsRoute(conditions ...metav1.Condition) client.Object {
 		route.Status.Parents = append(route.Status.Parents, gwv1.RouteParentStatus{
 			ParentRef:      *parentRef(),
 			Conditions:     conditions,
-			ControllerName: wellknown.GatewayControllerName,
+			ControllerName: wellknown.DefaultGatewayControllerName,
 		})
 	}
 	return route
@@ -754,7 +754,7 @@ func grpcRoute(conditions ...metav1.Condition) client.Object {
 		route.Status.Parents = append(route.Status.Parents, gwv1.RouteParentStatus{
 			ParentRef:      *parentRef(),
 			Conditions:     conditions,
-			ControllerName: wellknown.GatewayControllerName,
+			ControllerName: wellknown.DefaultGatewayControllerName,
 		})
 	}
 	return route
@@ -784,7 +784,7 @@ func delegateeRoute(conditions ...metav1.Condition) client.Object {
 		route.Status.Parents = append(route.Status.Parents, gwv1.RouteParentStatus{
 			ParentRef:      *parentRouteRef(),
 			Conditions:     conditions,
-			ControllerName: wellknown.GatewayControllerName,
+			ControllerName: wellknown.DefaultGatewayControllerName,
 		})
 	}
 	return route
