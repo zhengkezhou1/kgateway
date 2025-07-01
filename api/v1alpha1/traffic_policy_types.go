@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -79,6 +80,11 @@ type TrafficPolicySpec struct {
 	// Csrf specifies the Cross-Site Request Forgery (CSRF) policy for this traffic policy.
 	// +optional
 	Csrf *CSRFPolicy `json:"csrf,omitempty"`
+
+	// Buffer can be used to set the maximum request size that will be buffered.
+	// Requests exceeding this size will return a 413 response.
+	// +optional
+	Buffer *Buffer `json:"buffer,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.
@@ -373,4 +379,13 @@ type CSRFPolicy struct {
 	// +optional
 	// +kubebuilder:validation:MaxItems=16
 	AdditionalOrigins []*StringMatcher `json:"additionalOrigins,omitempty"`
+}
+
+type Buffer struct {
+	// MaxRequestSize sets the maximum size in bytes of a message body to buffer.
+	// Requests exceeding this size will receive HTTP 413.
+	// Example format: "1Mi", "512Ki", "1Gi"
+	// +required
+	// +kubebuilder:validation:XValidation:message="maxRequestSize must be less than 4Gi",rule="quantity(self).isLessThan(quantity('4Gi'))"
+	MaxRequestSize *resource.Quantity `json:"maxRequestSize"`
 }
