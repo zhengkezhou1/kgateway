@@ -788,10 +788,6 @@ func (in *CustomLabel) GetKeyDelimiter() *string {
 
 // AiExtensionTrace defines the tracing configuration for the AI extension
 type AiExtensionTrace struct {
-	// Enabled controls whether tracing is enabled
-	// +kubebuilder:validation:Required
-	Enabled *bool `json:"enabled,omitempty"`
-
 	// EndPoint specifies the URL of the OTLP Exporter for traces.
 	// Example: "http://my-otel-collector.svc.cluster.local:4317"
 	// https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/#otel_exporter_otlp_traces_endpoint

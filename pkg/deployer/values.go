@@ -164,7 +164,6 @@ type HelmAIExtension struct {
 }
 
 type helmAITracing struct {
-	Enabled           *bool                 `json:"enabled,omitempty"`
 	EndPoint          gwv1.AbsoluteURI      `json:"endpoint"`
 	Sampler           *helmAITracingSampler `json:"sampler,omitempty"`
 	Timeout           *int64                `json:"timeout,omitempty"`

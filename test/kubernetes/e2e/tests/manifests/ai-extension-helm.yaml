@@ -11,5 +11,3 @@ controller:
 gateway:
   aiExtension:
     enabled: true
-    tracing:
-      enabled: true

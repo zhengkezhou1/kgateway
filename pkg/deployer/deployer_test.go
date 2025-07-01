@@ -1243,7 +1243,6 @@ var _ = Describe("Deployer", func() {
 									ContainerPort: 80,
 								}},
 								Tracing: &gw2_v1alpha1.AiExtensionTrace{
-									Enabled:  ptr.To(true),
 									EndPoint: "http://my-otel-collector.svc.cluster.local:4317",
 									Sampler: gw2_v1alpha1.OTelTracesSampler{
 										SamplerType: gw2_v1alpha1.OTelTracesSamplerTraceidratio,
@@ -2448,7 +2447,6 @@ func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.Gateway
 						PullPolicy: ptr.To(corev1.PullAlways),
 					},
 					Tracing: &gw2_v1alpha1.AiExtensionTrace{
-						Enabled:  ptr.To(true),
 						EndPoint: "http://my-otel-collector.svc.cluster.local:4317",
 						Sampler: gw2_v1alpha1.OTelTracesSampler{
 							SamplerType: gw2_v1alpha1.OTelTracesSamplerTraceidratio,

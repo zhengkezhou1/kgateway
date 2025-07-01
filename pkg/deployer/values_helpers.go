@@ -213,7 +213,6 @@ func getTracingValues(tracingConfig *v1alpha1.AiExtensionTrace) *helmAITracing {
 		return nil
 	}
 	return &helmAITracing{
-		Enabled:  tracingConfig.Enabled,
 		EndPoint: tracingConfig.EndPoint,
 		Sampler: &helmAITracingSampler{
 			SamplerType: tracingConfig.GetSamplerType(),

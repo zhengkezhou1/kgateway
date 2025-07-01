@@ -329,11 +329,9 @@ spec:
       - configMap:
           name: {{ include "kgateway.gateway.fullname" . }}-ai-stats-config
         name: ai-stats-config
-      {{- if (($gateway.aiExtension.tracing).enabled) }}
       - configMap:
           name: {{ include "kgateway.gateway.fullname" . }}-ai-tracing-config
         name: ai-tracing-config
-      {{- end }}
 {{- end }} {{/* if (($gateway.aiExtension).enabled) */}}
 {{- if $gateway.istio.enabled }}
       - emptyDir:

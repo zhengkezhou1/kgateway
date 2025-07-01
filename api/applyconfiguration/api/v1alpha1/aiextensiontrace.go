@@ -13,7 +13,6 @@ import (
 // AiExtensionTraceApplyConfiguration represents a declarative configuration of the AiExtensionTrace type for use
 // with apply.
 type AiExtensionTraceApplyConfiguration struct {
-	Enabled           *bool                                  `json:"enabled,omitempty"`
 	EndPoint          *v1.AbsoluteURI                        `json:"endpoint,omitempty"`
 	Sampler           *OTelTracesSamplerApplyConfiguration   `json:"sampler,omitempty"`
 	Timeout           *time.Duration                         `json:"timeout,omitempty"`
@@ -25,14 +24,6 @@ type AiExtensionTraceApplyConfiguration struct {
 // apply.
 func AiExtensionTrace() *AiExtensionTraceApplyConfiguration {
 	return &AiExtensionTraceApplyConfiguration{}
-}
-
-// WithEnabled sets the Enabled field in the declarative configuration to the given value
-// and returns the receiver, so that objects can be built by chaining "With" function invocations.
-// If called multiple times, the Enabled field is set to the value of the last call.
-func (b *AiExtensionTraceApplyConfiguration) WithEnabled(value bool) *AiExtensionTraceApplyConfiguration {
-	b.Enabled = &value
-	return b
 }
 
 // WithEndPoint sets the EndPoint field in the declarative configuration to the given value
