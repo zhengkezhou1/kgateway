@@ -791,32 +791,39 @@ type AiExtensionTrace struct {
 	// EndPoint specifies the URL of the OTLP Exporter for traces.
 	// Example: "http://my-otel-collector.svc.cluster.local:4317"
 	// https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/#otel_exporter_otlp_traces_endpoint
-	// +kubebuilder:validation:Required
+	//
+	// +required
 	EndPoint gwv1.AbsoluteURI `json:"endpoint"`
 
 	// Sampler defines the sampling strategy for OpenTelemetry traces.
 	// Sampling helps in reducing the volume of trace data by selectively
 	// recording only a subset of traces.
 	// https://opentelemetry.io/docs/languages/sdk-configuration/general/#otel_traces_sampler
-	// +kubebuilder:validation:option
-	Sampler OTelTracesSampler `json:"sampler,omitempty"`
+	//
+	// +optional
+	Sampler *OTelTracesSampler `json:"sampler,omitempty"`
 
 	// OTLPTimeout specifies timeout configurations for OTLP (OpenTelemetry Protocol) exports.
 	// It allows setting general and trace-specific timeouts for sending data.
 	// https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/#otel_exporter_otlp_traces_timeout
-	// +kubebuilder:validation:option
-	Timeout time.Duration `json:"timeout,omitempty"`
+	//
+	// +optional
+	Timeout *time.Duration `json:"timeout,omitempty"`
 
 	// OTLPProtocol specifies the protocol to be used for OTLP exports.
 	// This determines how tracing data is serialized and transported (e.g., gRPC, HTTP/Protobuf).
 	// https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/#otel_exporter_otlp_traces_protocol
-	// +kubebuilder:validation:option
-	Protocol OTLPTracesProtocolType `json:"protocol,omitempty"`
+	//
+	// +optional
+	// +kubebuilder:validation:Enum=grpc;http/protobuf;http/json
+	Protocol *OTLPTracesProtocolType `json:"protocol,omitempty"`
 
 	// TransportSecurity controls the TLS (Transport Layer Security) settings when connecting
 	// to the tracing server. It determines whether certificate verification should be skipped.
-	// +kubebuilder:validation:option
-	TransportSecurity OTLPTransportSecurityMode `json:"transportSecurity,omitempty"`
+	//
+	// +optional
+	// +kubebuilder:validation:Enum=secure;insecure
+	TransportSecurity *OTLPTransportSecurityMode `json:"transportSecurity,omitempty"`
 }
 
 func (in *AiExtensionTrace) GetTimeout() *int64 {
@@ -834,11 +841,11 @@ type OTelTracesSamplerType string
 const (
 	// OTelTracesSamplerAlwaysOn enables always-on sampling.
 	// All traces will be recorded and exported. Useful for development or low-traffic systems.
-	OTelTracesSamplerAlwaysOn OTelTracesSamplerType = "always_on"
+	OTelTracesSamplerAlwaysOn OTelTracesSamplerType = "alwaysOn"
 
 	// OTelTracesSamplerAlwaysOff enables always-off sampling.
 	// No traces will be recorded or exported. Effectively disables tracing.
-	OTelTracesSamplerAlwaysOff OTelTracesSamplerType = "always_off"
+	OTelTracesSamplerAlwaysOff OTelTracesSamplerType = "alwaysOff"
 
 	// OTelTracesSamplerTraceidratio enables trace ID ratio based sampling.
 	// Traces are sampled based on a configured probability derived from their trace ID.
@@ -846,31 +853,31 @@ const (
 
 	// OTelTracesSamplerParentbasedAlwaysOn enables parent-based always-on sampling.
 	// If a parent span exists and is sampled, the child span is also sampled.
-	OTelTracesSamplerParentbasedAlwaysOn OTelTracesSamplerType = "parentbased_always_on"
+	OTelTracesSamplerParentbasedAlwaysOn OTelTracesSamplerType = "parentbasedAlwaysOn"
 
 	// OTelTracesSamplerParentbasedAlwaysOff enables parent-based always-off sampling.
 	// If a parent span exists and is not sampled, the child span is also not sampled.
-	OTelTracesSamplerParentbasedAlwaysOff OTelTracesSamplerType = "parentbased_always_off"
+	OTelTracesSamplerParentbasedAlwaysOff OTelTracesSamplerType = "parentbasedAlwaysOff"
 
 	// OTelTracesSamplerParentbasedTraceidratio enables parent-based trace ID ratio sampling.
 	// If a parent span exists and is sampled, the child span is also sampled.
-	OTelTracesSamplerParentbasedTraceidratio OTelTracesSamplerType = "parentbased_traceidratio"
+	OTelTracesSamplerParentbasedTraceidratio OTelTracesSamplerType = "parentbasedTraceidratio"
 )
 
 func (otelSamplerType OTelTracesSamplerType) String() string {
 	switch otelSamplerType {
 	case OTelTracesSamplerAlwaysOn:
-		return "always_on"
+		return "alwaysOn"
 	case OTelTracesSamplerAlwaysOff:
-		return "always_off"
+		return "alwaysOff"
 	case OTelTracesSamplerTraceidratio:
 		return "traceidratio"
 	case OTelTracesSamplerParentbasedAlwaysOn:
-		return "parentbased_always_on"
+		return "parentbasedAlwaysOn"
 	case OTelTracesSamplerParentbasedAlwaysOff:
-		return "parentbased_always_off"
+		return "parentbasedAlwaysOff"
 	case OTelTracesSamplerParentbasedTraceidratio:
-		return "parentbased_traceidratio"
+		return "parentbasedTraceidratio"
 	default:
 		return ""
 	}
@@ -882,19 +889,25 @@ type OTelTracesSampler struct {
 	// SamplerType specifies the type of sampler to use (default value: "parentbased_always_on").
 	// Refer to OTelTracesSamplerType for available options.
 	// https://opentelemetry.io/docs/languages/sdk-configuration/general/#otel_traces_sampler
-	SamplerType OTelTracesSamplerType `json:"type"`
+	//
+	//+optional
+	// +kubebuilder:validation:Enum=alwaysOn;alwaysOff;traceidratio;parentbasedAlwaysOn;parentbasedAlwaysOff;parentbasedTraceidratio
+	SamplerType *OTelTracesSamplerType `json:"type,omitempty"`
 	// SamplerArg provides an argument for the chosen sampler type.
 	// For "traceidratio" or "parentbased_traceidratio" samplers: Sampling probability, a number in the [0..1] range,
 	// e.g. 0.25. Default is 1.0 if unset.
 	// https://opentelemetry.io/docs/languages/sdk-configuration/general/#otel_traces_sampler_arg
-	SamplerArg string `json:"arg"`
+	//
+	//+optional
+	// +kubebuilder:validation:Pattern=`^0(\.\d+)?|1(\.0+)?$`
+	SamplerArg *string `json:"arg,omitempty"`
 }
 
 func (in *AiExtensionTrace) GetSampler() *OTelTracesSampler {
 	if in == nil {
 		return nil
 	}
-	return &in.Sampler
+	return in.Sampler
 }
 
 func (in *AiExtensionTrace) GetSamplerType() string {
@@ -908,7 +921,7 @@ func (in *AiExtensionTrace) GetSamplerArg() string {
 	if in == nil {
 		return ""
 	}
-	return in.GetSampler().SamplerArg
+	return *in.GetSampler().SamplerArg
 }
 
 // OTLPTracesProtocolType defines the supported protocols for OTLP exporter.

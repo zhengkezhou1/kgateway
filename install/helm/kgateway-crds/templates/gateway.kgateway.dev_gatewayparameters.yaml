@@ -464,21 +464,33 @@ spec:
                             pattern: ^(([^:/?#]+):)(//([^/?#]*))([^?#]*)(\?([^#]*))?(#(.*))?
                             type: string
                           protocol:
+                            enum:
+                            - grpc
+                            - http/protobuf
+                            - http/json
                             type: string
                           sampler:
                             properties:
                               arg:
+                                pattern: ^0(\.\d+)?|1(\.0+)?$
                                 type: string
                               type:
+                                enum:
+                                - alwaysOn
+                                - alwaysOff
+                                - traceidratio
+                                - parentbasedAlwaysOn
+                                - parentbasedAlwaysOff
+                                - parentbasedTraceidratio
                                 type: string
-                            required:
-                            - arg
-                            - type
                             type: object
                           timeout:
                             format: int64
                             type: integer
                           transportSecurity:
+                            enum:
+                            - secure
+                            - insecure
                             type: string
                         required:
                         - endpoint
