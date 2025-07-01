@@ -266,6 +266,11 @@ spec:
                 maxItems: 16
                 minItems: 1
                 type: array
+                x-kubernetes-validations:
+                - message: TargetRefs must reference either a Kubernetes Service or
+                    a Backend API
+                  rule: self.all(r, (r.group == '' && r.kind == 'Service') || (r.group
+                    == 'gateway.kgateway.dev' && r.kind == 'Backend'))
               targetSelectors:
                 items:
                   properties:
@@ -288,6 +293,11 @@ spec:
                   - matchLabels
                   type: object
                 type: array
+                x-kubernetes-validations:
+                - message: TargetSelectors must reference either a Kubernetes Service
+                    or a Backend API
+                  rule: self.all(r, (r.group == '' && r.kind == 'Service') || (r.group
+                    == 'gateway.kgateway.dev' && r.kind == 'Backend'))
               tcpKeepalive:
                 properties:
                   keepAliveInterval:

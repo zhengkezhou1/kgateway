@@ -492,6 +492,10 @@ spec:
                 maxItems: 16
                 minItems: 1
                 type: array
+                x-kubernetes-validations:
+                - message: targetRefs may only reference Gateway resources
+                  rule: self.all(r, r.kind == 'Gateway' && (!has(r.group) || r.group
+                    == 'gateway.networking.k8s.io'))
               targetSelectors:
                 items:
                   properties:
@@ -514,6 +518,10 @@ spec:
                   - matchLabels
                   type: object
                 type: array
+                x-kubernetes-validations:
+                - message: targetSelectors may only reference Gateway resources
+                  rule: self.all(r, r.kind == 'Gateway' && (!has(r.group) || r.group
+                    == 'gateway.networking.k8s.io'))
               upgradeConfig:
                 properties:
                   enabledUpgrades:

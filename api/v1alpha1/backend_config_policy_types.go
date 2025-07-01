@@ -30,16 +30,19 @@ type BackendConfigPolicyList struct {
 }
 
 // BackendConfigPolicySpec defines the desired state of BackendConfigPolicy.
+//
 // +kubebuilder:validation:AtMostOneOf=http1ProtocolOptions;http2ProtocolOptions
 type BackendConfigPolicySpec struct {
 	// TargetRefs specifies the target references to attach the policy to.
 	// +optional
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.group == '' && r.kind == 'Service') || (r.group == 'gateway.kgateway.dev' && r.kind == 'Backend'))",message="TargetRefs must reference either a Kubernetes Service or a Backend API"
 	TargetRefs []LocalPolicyTargetReference `json:"targetRefs,omitempty"`
 
 	// TargetSelectors specifies the target selectors to select resources to attach the policy to.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.group == '' && r.kind == 'Service') || (r.group == 'gateway.kgateway.dev' && r.kind == 'Backend'))",message="TargetSelectors must reference either a Kubernetes Service or a Backend API"
 	TargetSelectors []LocalPolicyTargetSelector `json:"targetSelectors,omitempty"`
 
 	// The timeout for new network connections to hosts in the cluster.

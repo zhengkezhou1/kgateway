@@ -3091,7 +3091,8 @@ func schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicySpec(ref common.Reference
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "HTTPListenerPolicySpec defines the desired state of a HTTP listener policy.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"targetRefs": {
 						SchemaProps: spec.SchemaProps{
@@ -5710,7 +5711,8 @@ func schema_kgateway_v2_api_v1alpha1_TrafficPolicySpec(ref common.ReferenceCallb
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "TrafficPolicySpec defines the desired state of a traffic policy.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"targetRefs": {
 						SchemaProps: spec.SchemaProps{
