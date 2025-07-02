@@ -12,6 +12,7 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
@@ -27,15 +28,25 @@ type translatorTestCase struct {
 }
 
 var _ = DescribeTable("Basic GatewayTranslator Tests",
-	func(in translatorTestCase) {
+	func(in translatorTestCase, settingOpts ...translatortest.SettingsOpts) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		dir := fsutils.MustGetThisDir()
 
 		inputFiles := []string{filepath.Join(dir, "testutils/inputs/", in.inputFile)}
 		expectedProxyFile := filepath.Join(dir, "testutils/outputs/", in.outputFile)
-		translatortest.TestTranslation(GinkgoT(), ctx, inputFiles, expectedProxyFile, in.gwNN, in.assertReports)
+		translatortest.TestTranslation(GinkgoT(), ctx, inputFiles, expectedProxyFile, in.gwNN, in.assertReports, settingOpts...)
 	},
+	Entry(
+		"http gateway with per connection buffer limit",
+		translatorTestCase{
+			inputFile:  "gateway-per-conn-buf-lim/gateway.yaml",
+			outputFile: "gateway-per-conn-buf-lim/proxy.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}),
 	Entry(
 		"http gateway with basic routing",
 		translatorTestCase{
@@ -107,7 +118,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			},
 		}),
 	Entry(
-		"gateway with correctly sorted routes",
+		"Gateway API route sorting",
 		translatorTestCase{
 			inputFile:  "route-sort.yaml",
 			outputFile: "route-sort.yaml",
@@ -116,6 +127,20 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 				Name:      "example-gateway",
 			},
 		}),
+	Entry(
+		"weight based route sorting",
+		translatorTestCase{
+			inputFile:  "route-sort-weighted.yaml",
+			outputFile: "route-sort-weighted.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "infra",
+				Name:      "example-gateway",
+			},
+		},
+		func(s *settings.Settings) {
+			s.WeightedRoutePrecedence = true
+		},
+	),
 	Entry(
 		"httproute with missing backend reports correctly",
 		translatorTestCase{
@@ -132,7 +157,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.GatewayControllerName)
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -159,7 +184,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.GatewayControllerName)
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -187,7 +212,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Generation: 1,
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.GatewayControllerName)
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				partiallyInvalid := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionPartiallyInvalid))
@@ -243,6 +268,26 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			},
 		}),
 	Entry(
+		"TrafficPolicy with buffer attached to gateway",
+		translatorTestCase{
+			inputFile:  "traffic-policy/buffer-gateway.yaml",
+			outputFile: "traffic-policy/buffer-gateway.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}),
+	Entry(
+		"TrafficPolicy with buffer attached to route",
+		translatorTestCase{
+			inputFile:  "traffic-policy/buffer-route.yaml",
+			outputFile: "traffic-policy/buffer-route.yaml",
+			gwNN: types.NamespacedName{
+				Namespace: "default",
+				Name:      "example-gateway",
+			},
+		}),
+	Entry(
 		"tcp gateway with basic routing",
 		translatorTestCase{
 			inputFile:  "tcp-routing/basic.yaml",
@@ -258,7 +303,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.GatewayControllerName)
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -283,7 +328,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.GatewayControllerName)
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -308,7 +353,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.GatewayControllerName)
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -343,7 +388,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.GatewayControllerName)
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -368,7 +413,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.GatewayControllerName)
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -393,7 +438,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.GatewayControllerName)
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -428,7 +473,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.GatewayControllerName)
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -453,7 +498,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.GatewayControllerName)
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -478,7 +523,7 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 						Namespace: "default",
 					},
 				}
-				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.GatewayControllerName)
+				routeStatus := reportsMap.BuildRouteStatus(context.Background(), route, wellknown.DefaultGatewayClassName)
 				Expect(routeStatus).NotTo(BeNil())
 				Expect(routeStatus.Parents).To(HaveLen(1))
 				resolvedRefs := meta.FindStatusCondition(routeStatus.Parents[0].Conditions, string(gwv1.RouteConditionResolvedRefs))
@@ -653,6 +698,14 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 			Name:      "example-gateway",
 		},
 	}),
+	Entry("Backend Config Policy with Health Check", translatorTestCase{
+		inputFile:  "backendconfigpolicy/healthcheck.yaml",
+		outputFile: "backendconfigpolicy/healthcheck.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
 	Entry("Backend Config Policy with Common HTTP Protocol - HTTP backend", translatorTestCase{
 		inputFile:  "backendconfigpolicy/commonhttpprotocol-httpbackend.yaml",
 		outputFile: "backendconfigpolicy/commonhttpprotocol-httpbackend.yaml",
@@ -664,6 +717,14 @@ var _ = DescribeTable("Basic GatewayTranslator Tests",
 	Entry("Backend Config Policy with Common HTTP Protocol - HTTP2 backend", translatorTestCase{
 		inputFile:  "backendconfigpolicy/commonhttpprotocol-http2backend.yaml",
 		outputFile: "backendconfigpolicy/commonhttpprotocol-http2backend.yaml",
+		gwNN: types.NamespacedName{
+			Namespace: "default",
+			Name:      "example-gateway",
+		},
+	}),
+	Entry("Backend Config Policy with HTTP2 Protocol Options", translatorTestCase{
+		inputFile:  "backendconfigpolicy/http2.yaml",
+		outputFile: "backendconfigpolicy/http2.yaml",
 		gwNN: types.NamespacedName{
 			Namespace: "default",
 			Name:      "example-gateway",
@@ -770,7 +831,9 @@ var _ = DescribeTable("Discovery Namespace Selector",
 					Expect(translatortest.AreReportsSuccess(gwNN, reportsMap)).To(MatchError(ContainSubstring(errdesc)))
 				}
 			},
-			translatortest.SettingsWithDiscoveryNamespaceSelectors(cfgJSON),
+			func(s *settings.Settings) {
+				s.DiscoveryNamespaceSelectors = cfgJSON
+			},
 		)
 	},
 	Entry("Select all resources",
@@ -845,7 +908,7 @@ func assertPolicyStatusWithGeneration(reportsMap reports.ReportMap, policies []r
 
 	for _, policy := range policies {
 		// Validate each policy's status
-		status := reportsMap.BuildPolicyStatus(context.Background(), policy, wellknown.GatewayControllerName, currentStatus)
+		status := reportsMap.BuildPolicyStatus(context.Background(), policy, wellknown.DefaultGatewayControllerName, currentStatus)
 		Expect(status).NotTo(BeNil(), "status missing for policy %v", policy)
 		Expect(status.Ancestors).To(HaveLen(1), "ancestor missing for policy %v", policy) // 1 Gateway(ancestor)
 

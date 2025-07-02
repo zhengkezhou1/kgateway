@@ -68,7 +68,8 @@ func (s *CombinedTranslator) Init(ctx context.Context) {
 
 	s.gwtranslator = gwtranslator.NewTranslator(queries, listenerTranslatorConfig)
 	s.irtranslator = &irtranslator.Translator{
-		ContributedPolicies: s.extensions.ContributesPolicies,
+		ContributedPolicies:  s.extensions.ContributesPolicies,
+		RouteReplacementMode: s.commonCols.Settings.RouteReplacementMode,
 	}
 	s.backendTranslator = &irtranslator.BackendTranslator{
 		ContributedBackends: make(map[schema.GroupKind]ir.BackendInit),
@@ -98,6 +99,7 @@ func (s *CombinedTranslator) HasSynced() bool {
 func (s *CombinedTranslator) buildProxy(kctx krt.HandlerContext, ctx context.Context, gw ir.Gateway, r reports.Reporter) *ir.GatewayIR {
 	stopwatch := utils.NewTranslatorStopWatch("CombinedTranslator")
 	stopwatch.Start()
+
 	var gatewayTranslator extensionsplug.KGwTranslator = s.gwtranslator
 	if s.extensions.ContributesGwTranslator != nil {
 		maybeGatewayTranslator := s.extensions.ContributesGwTranslator(gw.Obj)

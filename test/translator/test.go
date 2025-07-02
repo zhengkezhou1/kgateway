@@ -39,7 +39,6 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/registry"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/settings"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/reports"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
@@ -52,6 +51,7 @@ import (
 	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
+	"github.com/kgateway-dev/kgateway/v2/pkg/settings"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/envutils"
 )
 
@@ -419,12 +419,6 @@ func AreReportsSuccess(gwNN types.NamespacedName, reportsMap reports.ReportMap) 
 
 type SettingsOpts func(*settings.Settings)
 
-func SettingsWithDiscoveryNamespaceSelectors(cfgJson string) SettingsOpts {
-	return func(s *settings.Settings) {
-		s.DiscoveryNamespaceSelectors = cfgJson
-	}
-}
-
 func (tc TestCase) Run(
 	t test.Failer,
 	ctx context.Context,
@@ -492,14 +486,18 @@ func (tc TestCase) Run(
 	defer cancel()
 
 	// ensure classes used in tests exist and point at our controller
-	gwClasses := append(wellknown.BuiltinGatewayClasses.UnsortedList(), "example-gateway-class")
+	gwClasses := []string{
+		wellknown.DefaultGatewayClassName,
+		wellknown.DefaultWaypointClassName,
+		"example-gateway-class",
+	}
 	for _, className := range gwClasses {
 		cli.GatewayAPI().GatewayV1().GatewayClasses().Create(ctx, &gwv1.GatewayClass{
 			ObjectMeta: metav1.ObjectMeta{
 				Name: string(className),
 			},
 			Spec: gwv1.GatewayClassSpec{
-				ControllerName: wellknown.GatewayControllerName,
+				ControllerName: wellknown.DefaultGatewayControllerName,
 			},
 		}, metav1.CreateOptions{})
 	}
@@ -508,12 +506,12 @@ func (tc TestCase) Run(
 		Stop: ctx.Done(),
 	}
 
-	st, err := settings.BuildSettings()
+	settings, err := settings.BuildSettings()
 	if err != nil {
 		return nil, err
 	}
 	for _, opt := range settingsOpts {
-		opt(st)
+		opt(settings)
 	}
 
 	commoncol, err := common.NewCommonCollections(
@@ -522,15 +520,15 @@ func (tc TestCase) Run(
 		cli,
 		ourCli,
 		nil,
-		wellknown.GatewayControllerName,
+		wellknown.DefaultGatewayControllerName,
 		logr.Discard(),
-		*st,
+		*settings,
 	)
 	if err != nil {
 		return nil, err
 	}
 
-	plugins := registry.Plugins(ctx, commoncol)
+	plugins := registry.Plugins(ctx, commoncol, wellknown.DefaultWaypointClassName)
 	// TODO: consider moving the common code to a util that both proxy syncer and this test call
 	plugins = append(plugins, krtcollections.NewBuiltinPlugin(ctx))
 
@@ -566,7 +564,7 @@ func (tc TestCase) Run(
 		},
 	}
 
-	commoncol.InitPlugins(ctx, extensions)
+	commoncol.InitPlugins(ctx, extensions, *settings)
 
 	translator := translator.NewCombinedTranslator(ctx, extensions, commoncol)
 	translator.Init(ctx)

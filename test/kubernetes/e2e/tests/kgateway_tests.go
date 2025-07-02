@@ -2,7 +2,7 @@ package tests
 
 import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
-	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/acesslog"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/accesslog"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/backendconfigpolicy"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/backends"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/backendtls"
@@ -13,8 +13,10 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/dfp"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/extauth"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/extproc"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/http_listener_policy"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/lambda"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/local_rate_limit"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/metrics"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/policyselector"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/rate_limit"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/route_delegation"
@@ -22,6 +24,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/services/httproute"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/services/tcproute"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/services/tlsroute"
+	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/tracing"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/transformation"
 	// "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/admin_server"
 	// "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/features/crd_categories"
@@ -38,13 +41,14 @@ import (
 func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner := e2e.NewSuiteRunner(false)
 	kubeGatewaySuiteRunner.Register("ExtAuth", extauth.NewTestingSuite)
-	kubeGatewaySuiteRunner.Register("AccessLog", acesslog.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("AccessLog", accesslog.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Backends", backends.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("BackendTLSPolicies", backendtls.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("BasicRouting", basicrouting.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Deployer", deployer.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("DynamicForwardProxy", dfp.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("HTTPRouteServices", httproute.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("HttpListenerPolicy", http_listener_policy.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Lambda", lambda.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("RouteDelegation", route_delegation.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("TCPRouteServices", tcproute.NewTestingSuite)
@@ -57,7 +61,9 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	kubeGatewaySuiteRunner.Register("PolicySelector", policyselector.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("Cors", cors.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("BackendConfigPolicy", backendconfigpolicy.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("Metrics", metrics.NewTestingSuite)
 	kubeGatewaySuiteRunner.Register("CSRF", csrf.NewTestingSuite)
+	kubeGatewaySuiteRunner.Register("Tracing", tracing.NewTestingSuite)
 
 	// kubeGatewaySuiteRunner.Register("HttpListenerOptions", http_listener_options.NewTestingSuite)
 	// kubeGatewaySuiteRunner.Register("ListenerOptions", listener_options.NewTestingSuite)
@@ -68,7 +74,7 @@ func KubeGatewaySuiteRunner() e2e.SuiteRunner {
 	// kubeGatewaySuiteRunner.Register("GlooAdminServer", admin_server.NewTestingSuite)
 	// kubeGatewaySuiteRunner.Register("DirectResponse", directresponse.NewTestingSuite)
 	// kubeGatewaySuiteRunner.Register("CRDCategories", crd_categories.NewTestingSuite)
-	// kubeGatewaySuiteRunner.Register("Metrics", metrics.NewTestingSuite)
+	// kubeGatewaySuiteRunner.Register("ProxyMetrics", proxy_metrics.NewTestingSuite)
 
 	return kubeGatewaySuiteRunner
 }

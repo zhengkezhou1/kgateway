@@ -3,7 +3,7 @@ apiVersion: apiextensions.k8s.io/v1
 kind: CustomResourceDefinition
 metadata:
   annotations:
-    controller-gen.kubebuilder.io/version: v0.17.3
+    controller-gen.kubebuilder.io/version: v0.18.1-0.20250625175829-8d11ce77f347
   labels:
     app: kgateway
     app.kubernetes.io/name: kgateway
@@ -119,6 +119,11 @@ spec:
                                     required:
                                     - kind
                                     type: object
+                                    x-kubernetes-validations:
+                                    - message: at most one of the fields in [inline
+                                        secretRef] may be set
+                                      rule: '[has(self.inline),has(self.secretRef)].filter(x,x==true).size()
+                                        <= 1'
                                   model:
                                     type: string
                                 required:
@@ -273,6 +278,21 @@ spec:
                     - CHAT_STREAMING
                     type: string
                 type: object
+              buffer:
+                properties:
+                  maxRequestSize:
+                    anyOf:
+                    - type: integer
+                    - type: string
+                    pattern: ^(\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))(([KMGTPE]i)|[numkMGTPE]|([eE](\+|-)?(([0-9]+(\.[0-9]*)?)|(\.[0-9]+))))?$
+                    x-kubernetes-int-or-string: true
+                    x-kubernetes-validations:
+                    - message: maxRequestSize must be greater than 0 and less than
+                        4Gi
+                      rule: quantity(self).isGreaterThan(quantity('0')) && quantity(self).isLessThan(quantity('4Gi'))
+                required:
+                - maxRequestSize
+                type: object
               cors:
                 properties:
                   allowCredentials:
@@ -355,10 +375,9 @@ spec:
                       - ignoreCase
                       type: object
                       x-kubernetes-validations:
-                      - message: exactly one of Exact, Prefix, Suffix, Contains, or
-                          SafeRegex must be set
-                        rule: '[has(self.exact), has(self.prefix), has(self.suffix),
-                          has(self.contains), has(self.safeRegex)].filter(x, x).size()
+                      - message: exactly one of the fields in [exact prefix suffix
+                          contains safeRegex] must be set
+                        rule: '[has(self.exact),has(self.prefix),has(self.suffix),has(self.contains),has(self.safeRegex)].filter(x,x==true).size()
                           == 1'
                     maxItems: 16
                     type: array
@@ -374,9 +393,10 @@ spec:
                     type: integer
                 type: object
                 x-kubernetes-validations:
-                - message: exactly one of PercentageEnabled or PercentageShadowed
-                    must be set
-                  rule: has(self.percentageEnabled) != has(self.percentageShadowed)
+                - message: at most one of the fields in [percentageEnabled percentageShadowed]
+                    may be set
+                  rule: '[has(self.percentageEnabled),has(self.percentageShadowed)].filter(x,x==true).size()
+                    <= 1'
               extAuth:
                 properties:
                   contextExtensions:
@@ -409,9 +429,10 @@ spec:
                     type: object
                 type: object
                 x-kubernetes-validations:
-                - message: only one of 'extensionRef' or 'enablement' may be set
-                  rule: (has(self.extensionRef) && !has(self.enablement)) || (!has(self.extensionRef)
-                    && has(self.enablement))
+                - message: exactly one of the fields in [extensionRef enablement]
+                    must be set
+                  rule: '[has(self.extensionRef),has(self.enablement)].filter(x,x==true).size()
+                    == 1'
               extProc:
                 properties:
                   extensionRef:
@@ -582,6 +603,13 @@ spec:
                 maxItems: 16
                 minItems: 1
                 type: array
+                x-kubernetes-validations:
+                - message: targetRefs may only reference Gateway, HTTPRoute, or XListenerSet
+                    resources
+                  rule: self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute'
+                    || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))
+                    && (!has(r.group) || r.group == 'gateway.networking.k8s.io' ||
+                    r.group == 'gateway.networking.x-k8s.io'))
               targetSelectors:
                 items:
                   properties:
@@ -604,6 +632,13 @@ spec:
                   - matchLabels
                   type: object
                 type: array
+                x-kubernetes-validations:
+                - message: targetSelectors may only reference Gateway, HTTPRoute,
+                    or XListenerSet resources
+                  rule: self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute'
+                    || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io'))
+                    && (!has(r.group) || r.group == 'gateway.networking.k8s.io' ||
+                    r.group == 'gateway.networking.x-k8s.io'))
               transformation:
                 properties:
                   request:

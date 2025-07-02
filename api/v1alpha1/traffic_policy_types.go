@@ -2,6 +2,7 @@ package v1alpha1
 
 import (
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/resource"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
@@ -34,16 +35,19 @@ type TrafficPolicyList struct {
 	Items           []TrafficPolicy `json:"items"`
 }
 
+// TrafficPolicySpec defines the desired state of a traffic policy.
 type TrafficPolicySpec struct {
 	// TargetRefs specifies the target resources by reference to attach the policy to.
 	// +optional
 	//
 	// +kubebuilder:validation:MinItems=1
 	// +kubebuilder:validation:MaxItems=16
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute' || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io')) && (!has(r.group) || r.group == 'gateway.networking.k8s.io' || r.group == 'gateway.networking.x-k8s.io'))",message="targetRefs may only reference Gateway, HTTPRoute, or XListenerSet resources"
 	TargetRefs []LocalPolicyTargetReferenceWithSectionName `json:"targetRefs,omitempty"`
 
 	// TargetSelectors specifies the target selectors to select resources to attach the policy to.
 	// +optional
+	// +kubebuilder:validation:XValidation:rule="self.all(r, (r.kind == 'Gateway' || r.kind == 'HTTPRoute' || (r.kind == 'XListenerSet' && r.group == 'gateway.networking.x-k8s.io')) && (!has(r.group) || r.group == 'gateway.networking.k8s.io' || r.group == 'gateway.networking.x-k8s.io'))",message="targetSelectors may only reference Gateway, HTTPRoute, or XListenerSet resources"
 	TargetSelectors []LocalPolicyTargetSelector `json:"targetSelectors,omitempty"`
 
 	// AI is used to configure AI-based policies for the policy.
@@ -76,6 +80,11 @@ type TrafficPolicySpec struct {
 	// Csrf specifies the Cross-Site Request Forgery (CSRF) policy for this traffic policy.
 	// +optional
 	Csrf *CSRFPolicy `json:"csrf,omitempty"`
+
+	// Buffer can be used to set the maximum request size that will be buffered.
+	// Requests exceeding this size will return a 413 response.
+	// +optional
+	Buffer *Buffer `json:"buffer,omitempty"`
 }
 
 // TransformationPolicy config is used to modify envoy behavior at a route level.
@@ -182,7 +191,8 @@ const (
 // Note that most of these fields are passed along as is to Envoy.
 // For more details on particular fields please see the Envoy ExtAuth documentation.
 // https://raw.githubusercontent.com/envoyproxy/envoy/f910f4abea24904aff04ec33a00147184ea7cffa/api/envoy/extensions/filters/http/ext_authz/v3/ext_authz.proto
-// +kubebuilder:validation:XValidation:message="only one of 'extensionRef' or 'enablement' may be set",rule="(has(self.extensionRef) && !has(self.enablement)) || (!has(self.extensionRef) && has(self.enablement))"
+//
+// +kubebuilder:validation:ExactlyOneOf=extensionRef;enablement
 type ExtAuthPolicy struct {
 	// ExtensionRef references the ExternalExtension that should be used for authentication.
 	// +optional
@@ -350,7 +360,8 @@ type CorsPolicy struct {
 // CSRFPolicy can be used to set percent of requests for which the CSRF filter is enabled,
 // enable shadow-only mode where policies will be evaluated and tracked, but not enforced and
 // add additional source origins that will be allowed in addition to the destination origin.
-// +kubebuilder:validation:XValidation:message="exactly one of PercentageEnabled or PercentageShadowed must be set",rule="has(self.percentageEnabled) != has(self.percentageShadowed)"
+//
+// +kubebuilder:validation:AtMostOneOf=percentageEnabled;percentageShadowed
 type CSRFPolicy struct {
 	// Specifies the percentage of requests for which the CSRF filter is enabled.
 	// +optional
@@ -368,4 +379,13 @@ type CSRFPolicy struct {
 	// +optional
 	// +kubebuilder:validation:MaxItems=16
 	AdditionalOrigins []*StringMatcher `json:"additionalOrigins,omitempty"`
+}
+
+type Buffer struct {
+	// MaxRequestSize sets the maximum size in bytes of a message body to buffer.
+	// Requests exceeding this size will receive HTTP 413.
+	// Example format: "1Mi", "512Ki", "1Gi"
+	// +required
+	// +kubebuilder:validation:XValidation:message="maxRequestSize must be greater than 0 and less than 4Gi",rule="quantity(self).isGreaterThan(quantity('0')) && quantity(self).isLessThan(quantity('4Gi'))"
+	MaxRequestSize *resource.Quantity `json:"maxRequestSize"`
 }
