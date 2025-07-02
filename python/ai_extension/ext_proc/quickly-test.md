@@ -70,7 +70,7 @@ metadata:
     app: ai-kgateway
 type: Opaque
 stringData:
-  Authorization: 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
+  Authorization: 
 --- 
 apiVersion: gateway.kgateway.dev/v1alpha1
 kind: Backend
