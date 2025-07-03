@@ -167,13 +167,13 @@ type helmAITracing struct {
 	EndPoint          gwv1.AbsoluteURI      `json:"endpoint"`
 	Sampler           *helmAITracingSampler `json:"sampler,omitempty"`
 	Timeout           *int64                `json:"timeout,omitempty"`
-	Protocol          string                `json:"protocol,omitempty"`
-	TransportSecurity string                `json:"transportSecurity,omitempty"`
+	Protocol          *string               `json:"protocol,omitempty"`
+	TransportSecurity *string               `json:"transportSecurity,omitempty"`
 }
 
 type helmAITracingSampler struct {
-	SamplerType string `json:"type"`
-	SamplerArg  string `json:"arg"`
+	SamplerType *string `json:"type,omitempty"`
+	SamplerArg  *string `json:"arg,omitempty"`
 }
 
 type HelmInferenceExtension struct {

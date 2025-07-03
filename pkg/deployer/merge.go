@@ -731,10 +731,10 @@ func deepMergeAIExtensionTracing(dst, src *v1alpha1.AiExtensionTrace) *v1alpha1.
 		return src
 	}
 	dst.EndPoint = MergeComparable(dst.EndPoint, src.EndPoint)
-	dst.Sampler = MergeComparable(dst.Sampler, src.Sampler)
-	dst.Timeout = MergeComparable(dst.Timeout, dst.Timeout)
-	dst.Protocol = MergeComparable(dst.Protocol, dst.Protocol)
-	dst.TransportSecurity = MergeComparable(dst.TransportSecurity, dst.TransportSecurity)
+	dst.Sampler = MergePointers(dst.Sampler, src.Sampler)
+	dst.Timeout = MergePointers(dst.Timeout, src.Timeout)
+	dst.Protocol = MergePointers(dst.Protocol, src.Protocol)
+	dst.TransportSecurity = MergePointers(dst.TransportSecurity, src.TransportSecurity)
 	return dst
 }
 

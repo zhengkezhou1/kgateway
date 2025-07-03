@@ -827,7 +827,7 @@ type AiExtensionTrace struct {
 }
 
 func (in *AiExtensionTrace) GetTimeout() *int64 {
-	if in == nil {
+	if in == nil || in.Timeout == nil {
 		return nil
 	}
 	microseconds := in.Timeout.Microseconds()
@@ -910,18 +910,19 @@ func (in *AiExtensionTrace) GetSampler() *OTelTracesSampler {
 	return in.Sampler
 }
 
-func (in *AiExtensionTrace) GetSamplerType() string {
-	if in == nil {
-		return ""
+func (in *AiExtensionTrace) GetSamplerType() *string {
+	if in == nil || in.Sampler == nil || in.Sampler.SamplerType == nil {
+		return nil
 	}
-	return in.GetSampler().SamplerType.String()
+	value := in.Sampler.SamplerType.String()
+	return &value
 }
 
-func (in *AiExtensionTrace) GetSamplerArg() string {
-	if in == nil {
-		return ""
+func (in *AiExtensionTrace) GetSamplerArg() *string {
+	if in == nil || in.Sampler == nil {
+		return nil
 	}
-	return *in.GetSampler().SamplerArg
+	return in.GetSampler().SamplerArg
 }
 
 // OTLPTracesProtocolType defines the supported protocols for OTLP exporter.
@@ -939,11 +940,12 @@ const (
 	OTLPTracesProtocolTypeJson OTLPTracesProtocolType = "http/json"
 )
 
-func (in *AiExtensionTrace) GetOTLPProtocolType() string {
-	if in == nil {
-		return ""
+func (in *AiExtensionTrace) GetOTLPProtocolType() *string {
+	if in == nil || in.Protocol == nil {
+		return nil
 	}
-	return in.Protocol.String()
+	value := in.Protocol.String()
+	return &value
 }
 
 func (otelProtocolType OTLPTracesProtocolType) String() string {
@@ -984,11 +986,12 @@ func (otelTransportSecurityMode OTLPTransportSecurityMode) String() string {
 	}
 }
 
-func (in *AiExtensionTrace) GetTransportSecurityMode() string {
-	if in == nil {
-		return ""
+func (in *AiExtensionTrace) GetTransportSecurityMode() *string {
+	if in == nil || in.TransportSecurity == nil {
+		return nil
 	}
-	return in.TransportSecurity.String()
+	value := in.TransportSecurity.String()
+	return &value
 }
 
 // AgentGateway configures the AgentGateway integration. If AgentGateway is enabled, Envoy
