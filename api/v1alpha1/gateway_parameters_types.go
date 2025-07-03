@@ -1,8 +1,6 @@
 package v1alpha1
 
 import (
-	"time"
-
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
@@ -808,7 +806,7 @@ type AiExtensionTrace struct {
 	// https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/#otel_exporter_otlp_traces_timeout
 	//
 	// +optional
-	Timeout *time.Duration `json:"timeout,omitempty"`
+	Timeout *gwv1.Duration `json:"timeout,omitempty"`
 
 	// OTLPProtocol specifies the protocol to be used for OTLP exports.
 	// This determines how tracing data is serialized and transported (e.g., gRPC, HTTP/Protobuf).
@@ -826,12 +824,11 @@ type AiExtensionTrace struct {
 	TransportSecurity *OTLPTransportSecurityMode `json:"transportSecurity,omitempty"`
 }
 
-func (in *AiExtensionTrace) GetTimeout() *int64 {
-	if in == nil || in.Timeout == nil {
+func (in *AiExtensionTrace) GetTimeout() *gwv1.Duration {
+	if in == nil {
 		return nil
 	}
-	microseconds := in.Timeout.Microseconds()
-	return &microseconds
+	return in.Timeout
 }
 
 // OTelTracesSamplerType defines the available OpenTelemetry trace sampler types.

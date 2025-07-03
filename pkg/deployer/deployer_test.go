@@ -1244,13 +1244,13 @@ var _ = Describe("Deployer", func() {
 								}},
 								Tracing: &gw2_v1alpha1.AiExtensionTrace{
 									EndPoint: "http://my-otel-collector.svc.cluster.local:4317",
-									Sampler: gw2_v1alpha1.OTelTracesSampler{
-										SamplerType: gw2_v1alpha1.OTelTracesSamplerTraceidratio,
-										SamplerArg:  "0.5",
+									Sampler: &gw2_v1alpha1.OTelTracesSampler{
+										SamplerType: ptr.To(gw2_v1alpha1.OTelTracesSamplerTraceidratio),
+										SamplerArg:  ptr.To("0.5"),
 									},
-									Timeout:           1 * time.Second,
-									Protocol:          gw2_v1alpha1.OTLPTracesProtocolTypeGrpc,
-									TransportSecurity: gw2_v1alpha1.OTLPTransportSecurityInsecure,
+									Timeout:           ptr.To(api.Duration("100s")),
+									Protocol:          ptr.To(gw2_v1alpha1.OTLPTracesProtocolTypeGrpc),
+									TransportSecurity: ptr.To(gw2_v1alpha1.OTLPTransportSecurityInsecure),
 								},
 							},
 						},
@@ -2448,13 +2448,13 @@ func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.Gateway
 					},
 					Tracing: &gw2_v1alpha1.AiExtensionTrace{
 						EndPoint: "http://my-otel-collector.svc.cluster.local:4317",
-						Sampler: gw2_v1alpha1.OTelTracesSampler{
-							SamplerType: gw2_v1alpha1.OTelTracesSamplerTraceidratio,
-							SamplerArg:  "0.5",
+						Sampler: &gw2_v1alpha1.OTelTracesSampler{
+							SamplerType: ptr.To(gw2_v1alpha1.OTelTracesSamplerTraceidratio),
+							SamplerArg:  ptr.To("0.5"),
 						},
-						Timeout:           1 * time.Second,
-						Protocol:          gw2_v1alpha1.OTLPTracesProtocolTypeGrpc,
-						TransportSecurity: gw2_v1alpha1.OTLPTransportSecurityInsecure,
+						Timeout:           ptr.To(api.Duration("100s")),
+						Protocol:          ptr.To(gw2_v1alpha1.OTLPTracesProtocolTypeGrpc),
+						TransportSecurity: ptr.To(gw2_v1alpha1.OTLPTransportSecurityInsecure),
 					},
 				},
 			},

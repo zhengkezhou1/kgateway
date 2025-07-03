@@ -5,8 +5,6 @@
 package v1alpha1
 
 import (
-	timex "time"
-
 	v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -365,7 +363,7 @@ func (in *AiExtensionTrace) DeepCopyInto(out *AiExtensionTrace) {
 	}
 	if in.Timeout != nil {
 		in, out := &in.Timeout, &out.Timeout
-		*out = new(timex.Duration)
+		*out = new(apisv1.Duration)
 		**out = **in
 	}
 	if in.Protocol != nil {

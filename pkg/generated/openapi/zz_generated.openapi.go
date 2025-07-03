@@ -1139,8 +1139,8 @@ func schema_kgateway_v2_api_v1alpha1_AiExtensionTrace(ref common.ReferenceCallba
 					"timeout": {
 						SchemaProps: spec.SchemaProps{
 							Description: "OTLPTimeout specifies timeout configurations for OTLP (OpenTelemetry Protocol) exports. It allows setting general and trace-specific timeouts for sending data. https://opentelemetry.io/docs/languages/sdk-configuration/otlp-exporter/#otel_exporter_otlp_traces_timeout",
-							Type:        []string{"integer"},
-							Format:      "int64",
+							Type:        []string{"string"},
+							Format:      "",
 						},
 					},
 					"protocol": {

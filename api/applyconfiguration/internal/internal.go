@@ -258,7 +258,7 @@ var schemaYAML = typed.YAMLObject(`types:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OTelTracesSampler
     - name: timeout
       type:
-        scalar: numeric
+        scalar: string
     - name: transportSecurity
       type:
         scalar: string
