@@ -163,15 +163,16 @@ func applyDefaults(
 		}
 
 		trimmed := strings.TrimSpace(field.Value)
-		if strings.HasPrefix(trimmed, "[") || strings.HasSuffix(trimmed, "]") ||
-			strings.HasPrefix(trimmed, "{") || strings.HasSuffix(trimmed, "}") {
+		hasJsonPrefix := strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[")
+		hasJsonSuffix := strings.HasSuffix(trimmed, "}") || strings.HasSuffix(trimmed, "]")
+
+		if hasJsonPrefix || hasJsonSuffix {
 			if !json.Valid([]byte(field.Value)) {
 				return fmt.Errorf("field %s contains invalid JSON string: %s", field.Field, field.Value)
 			}
 		}
 		var tmpl string
 		if field.Override != nil && *field.Override {
-			trimmed := strings.TrimSpace(field.Value)
 			if strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[") {
 				tmpl = field.Value
 			} else {
@@ -179,7 +180,6 @@ func applyDefaults(
 			}
 		} else {
 			// Inja default function will use the default value if the field provided is falsey
-			trimmed := strings.TrimSpace(field.Value)
 			if strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[") {
 				tmpl = fmt.Sprintf("{{ default(%s, %s) }}", field.Field, field.Value)
 			} else {
