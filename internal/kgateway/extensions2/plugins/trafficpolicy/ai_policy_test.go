@@ -254,7 +254,7 @@ func TestDefault(t *testing.T) {
 						Value: "[1,2,3]",
 					},
 					{
-						Field: "objet",
+						Field: "object",
 						Value: `{"model":"gpt-4"}`,
 					},
 					{
@@ -275,7 +275,7 @@ func TestDefault(t *testing.T) {
 						Override: ptr.To(true),
 					},
 					{
-						Field:    "objet",
+						Field:    "object",
 						Value:    `{"model":"gpt-4"}`,
 						Override: ptr.To(true),
 					},
