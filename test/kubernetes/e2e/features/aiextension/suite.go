@@ -55,6 +55,7 @@ func NewSuite(
 
 func (s *tsuite) SetupSuite() {
 	s.manifests = map[string][]string{
+		"TestDefaults":                {commonManifest, defaultsManifest},
 		"TestTracing":                 {tracingManifest},
 		"TestRouting":                 {commonManifest, backendManifest, routesBasicManifest},
 		"TestRoutingPassthrough":      {commonManifest, backendPassthroughManifest, routesBasicManifest},
@@ -106,6 +107,27 @@ func (s *tsuite) AfterTest(suiteName, testName string) {
 		err := s.testInst.Actions.Kubectl().DeleteFileSafe(s.ctx, manifest)
 		s.Require().NoError(err)
 	}
+}
+
+func (s *tsuite) TestDefaults() {
+	namespace := s.testInst.Metadata.InstallNamespace
+	pod, err := s.testInst.Actions.Kubectl().GetPodsInNsWithLabel(
+		s.ctx, namespace, "kgateway=kgateway",
+	)
+
+	s.Require().Len(pod, 1)
+	s.Require().NoError(err, "Failed to get pods in namespace: %s", namespace)
+
+	logs, err := s.testInst.Actions.Kubectl().GetContainerLogs(s.ctx, namespace, pod[0])
+	s.Require().NoError(err)
+	assert.Contains(s.T(), logs, `"level":"ERROR"`)
+	assert.Contains(s.T(), logs, `"msg":"error translating gateway extension"`)
+	assert.Contains(s.T(), logs, `"name":"default-value-validation-invalid-slices-test"`)
+	assert.Contains(s.T(), logs, `"error":"field invalid_slices contains invalid JSON string: [1,2,3"`)
+	assert.Contains(s.T(), logs, `"name":"default-value-validation-invalid-object-test"`)
+	assert.Contains(s.T(), logs, `"error":"field invalid_object contains invalid JSON string: \"model\":\"gpt-4\"}"`)
+	assert.Contains(s.T(), logs, `"name":"override-default-value-validation-invalid-slices-test"`)
+	assert.Contains(s.T(), logs, `"name":"override-default-value-validation-invalid-object-test"`)
 }
 
 // TODO: Test that spans generated after traffic passes through the AI extension are correctly sent to the backend storage (Tempo).
