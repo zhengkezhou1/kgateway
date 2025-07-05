@@ -161,12 +161,29 @@ func applyDefaults(
 		if err != nil {
 			return err
 		}
+
+		trimmed := strings.TrimSpace(field.Value)
+		if strings.HasPrefix(trimmed, "[") || strings.HasSuffix(trimmed, "]") || strings.HasSuffix(trimmed, "{") || strings.HasSuffix(trimmed, "}") {
+			if !json.Valid([]byte(field.Value)) {
+				return fmt.Errorf("field %s contains invalid JSON string: %s", field.Field, field.Value)
+			}
+		}
 		var tmpl string
 		if field.Override != nil && *field.Override {
-			tmpl = string(marshalled)
+			trimmed := strings.TrimSpace(field.Value)
+			if strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[") {
+				tmpl = field.Value
+			} else {
+				tmpl = string(marshalled)
+			}
 		} else {
 			// Inja default function will use the default value if the field provided is falsey
-			tmpl = fmt.Sprintf("{{ default(%s, %s) }}", field.Field, string(marshalled))
+			trimmed := strings.TrimSpace(field.Value)
+			if strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[") {
+				tmpl = fmt.Sprintf("{{ default(\"%s\", %s) }}", field.Field, field.Value)
+			} else {
+				tmpl = fmt.Sprintf("{{ default(\"%s\", %s) }}", field.Field, string(marshalled))
+			}
 		}
 		if transformation.GetMergeJsonKeys().GetJsonKeys() == nil {
 			transformation.GetMergeJsonKeys().JsonKeys = make(map[string]*envoytransformation.MergeJsonKeys_OverridableTemplate)
