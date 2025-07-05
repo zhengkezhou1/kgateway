@@ -1,0 +1,45 @@
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: default-value-validation-invalid-slices-test
+  namespace: ai-test
+spec:
+  ai:
+    defaults:
+      - field: "invalid_slices"
+        value: "[1,2,3"
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: default-value-validation-invalid-object-test
+  namespace: ai-test
+spec:
+  ai:
+    defaults:
+      - field: "invalid_object"
+        value: "\"model\":\"gpt-4\"}"
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: override-default-value-validation-invalid-slices-test
+  namespace: ai-test
+spec:
+  ai:
+    defaults:
+      - field: "invalid_slices"
+        value: "[1,2,3"
+        override: true
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: override-default-value-validation-invalid-object-test
+  namespace: ai-test
+spec:
+  ai:
+    defaults:
+      - field: "invalid_object"
+        value: "\"model\":\"gpt-4\"}"
+        override: true
