@@ -10,9 +10,6 @@ var (
 	// common setup manifest (Gateway and Curl pod)
 	commonManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "common.yaml")
 
-	// validation defaults filed values
-	defaultsManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "defaults-value-validation.yaml")
-
 	tracingManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tracing.yaml")
 
 	// backends with Token Auth
