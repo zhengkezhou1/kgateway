@@ -162,25 +162,29 @@ func applyDefaults(
 			return err
 		}
 
-		trimmed := strings.TrimSpace(field.Value)
-		hasJsonPrefix := strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[")
-		hasJsonSuffix := strings.HasSuffix(trimmed, "}") || strings.HasSuffix(trimmed, "]")
+		value := strings.TrimSpace(field.Value)
 
-		if hasJsonPrefix || hasJsonSuffix {
+		// Inja template cannot recognize if a JSON string is valid, so we need to pre-validate based on JSON object/array format
+		// Valid object: {"model":"gpt4"}
+		// Valid array: [1,2,3]
+		// Invalid formats: {"model":"gpt4", "model2":}, [1,2,3, [1,2,3
+		if hasJsonPrefix(value) || hasJsonSuffix(value) {
 			if !json.Valid([]byte(field.Value)) {
 				return fmt.Errorf("field %s contains invalid JSON string: %s", field.Field, field.Value)
 			}
 		}
+		// When field.Value is a primitive type, deserialization from byte array works normally, tmpl value is: tmpl = string(marshalled)
+		// When field.Value is an object/array, deserialization treats it as a plain string, tmpl value should use the original value: tmpl = field.Value
 		var tmpl string
 		if field.Override != nil && *field.Override {
-			if strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[") {
+			if hasJsonPrefix(value) {
 				tmpl = field.Value
 			} else {
 				tmpl = string(marshalled)
 			}
 		} else {
 			// Inja default function will use the default value if the field provided is falsey
-			if strings.HasPrefix(trimmed, "{") || strings.HasPrefix(trimmed, "[") {
+			if hasJsonPrefix(value) {
 				tmpl = fmt.Sprintf("{{ default(%s, %s) }}", field.Field, field.Value)
 			} else {
 				tmpl = fmt.Sprintf("{{ default(%s, %s) }}", field.Field, string(marshalled))
@@ -199,6 +203,16 @@ func applyDefaults(
 		}
 	}
 	return nil
+}
+
+// hasJsonPrefix checks if the given JSON string contains object/array opening symbols
+func hasJsonPrefix(value string) bool {
+	return strings.HasPrefix(value, "{") || strings.HasPrefix(value, "[")
+}
+
+// hasJsonSuffix checks if the given JSON string contains object/array closing symbols
+func hasJsonSuffix(value string) bool {
+	return strings.HasSuffix(value, "}") || strings.HasSuffix(value, "]")
 }
 
 func applyPromptEnrichment(

@@ -1,0 +1,60 @@
+kind: Gateway
+apiVersion: gateway.networking.k8s.io/v1
+metadata:
+  name: example-gateway
+  namespace: infra
+spec:
+  gatewayClassName: kgateway
+  listeners:
+    - protocol: HTTP
+      port: 8080
+      name: http
+      allowedRoutes:
+        namespaces:
+          from: All
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: default-value-validation-invalid-slices-test
+  namespace: infra
+spec:
+  ai:
+    defaults:
+      - field: "invalid_slices"
+        value: "[1,2,3"
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: default-value-validation-invalid-object-test
+  namespace: infra
+spec:
+  ai:
+    defaults:
+      - field: "invalid_object"
+        value: "\"model\":\"gpt-4\"}"
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: override-default-value-validation-invalid-slices-test
+  namespace: infra
+spec:
+  ai:
+    defaults:
+      - field: "invalid_slices"
+        value: "[1,2,3"
+        override: true
+---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: TrafficPolicy
+metadata:
+  name: override-default-value-validation-invalid-object-test
+  namespace: infra
+spec:
+  ai:
+    defaults:
+      - field: "invalid_object"
+        value: "\"model\":\"gpt-4\"}"
+        override: true

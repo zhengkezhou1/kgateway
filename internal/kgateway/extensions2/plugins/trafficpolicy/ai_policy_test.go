@@ -3,6 +3,7 @@ package trafficpolicy
 import (
 	"errors"
 	"os"
+	"strconv"
 	"testing"
 
 	envoy_config_core_v3 "github.com/envoyproxy/go-control-plane/envoy/config/core/v3"
@@ -261,6 +262,18 @@ func TestDefault(t *testing.T) {
 						Field: "model",
 						Value: "gpt-4",
 					},
+					{
+						Field: "id",
+						Value: strconv.Itoa(1),
+					},
+					{
+						Field: "price",
+						Value: strconv.FormatFloat(1.0, 'f', -1, 64),
+					},
+					{
+						Field: "enabled",
+						Value: strconv.FormatBool(true),
+					},
 				},
 			},
 			err: nil,
@@ -282,6 +295,26 @@ func TestDefault(t *testing.T) {
 					{
 						Field:    "model",
 						Value:    "gpt-4",
+						Override: ptr.To(true),
+					},
+					{
+						Field:    "model",
+						Value:    "gpt-4",
+						Override: ptr.To(true),
+					},
+					{
+						Field:    "id",
+						Value:    strconv.Itoa(1),
+						Override: ptr.To(true),
+					},
+					{
+						Field:    "price",
+						Value:    strconv.FormatFloat(1.0, 'f', -1, 64),
+						Override: ptr.To(true),
+					},
+					{
+						Field:    "enabled",
+						Value:    strconv.FormatBool(true),
 						Override: ptr.To(true),
 					},
 				},
