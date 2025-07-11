@@ -60,6 +60,7 @@ from presidio_analyzer import EntityRecognizer
 
 # OpenTelemetry imports
 from opentelemetry import trace
+from opentelemetry.semconv._incubating.attributes import gen_ai_attributes
 
 from opentelemetry.context import attach, detach
 from opentelemetry.propagate import extract
@@ -446,47 +447,67 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
             )
 
             body = body_jsn
+            operation_name = handler.req.headers.get("path", "")
+            
             with OtelTracer.get().start_as_current_span(
-                "count_tokens",
+                f"{operation_name} {handler.request_model}",
                 context=trace.set_span_in_context(parent_span),
-            ):
+                attributes={
+                    gen_ai_attributes.GEN_AI_OPERATION_NAME : operation_name,
+                    gen_ai_attributes.GEN_AI_SYSTEM : handler.llm_provider,
+                    gen_ai_attributes.GEN_AI_OUTPUT_TYPE : body.get("response_format", {}).get("type", ""),
+                    gen_ai_attributes.GEN_AI_REQUEST_CHOICE_COUNT : body.get("n", 0),
+                    gen_ai_attributes.GEN_AI_REQUEST_MODEL : handler.request_model,
+                    gen_ai_attributes.GEN_AI_REQUEST_SEED : body.get("seed", 0),
+                    gen_ai_attributes.GEN_AI_REQUEST_FREQUENCY_PENALTY : body.get("frequency_penalty", 0),
+                    gen_ai_attributes.GEN_AI_REQUEST_MAX_TOKENS : body.get("max_tokens", 0),
+                    gen_ai_attributes.GEN_AI_REQUEST_PRESENCE_PENALTY : body.get("presence_penalty", 0),
+                    gen_ai_attributes.GEN_AI_REQUEST_STOP_SEQUENCES : body.get("stop", []),
+                    gen_ai_attributes.GEN_AI_REQUEST_TEMPERATURE : body.get("temperature", 0),
+                    gen_ai_attributes.GEN_AI_REQUEST_TOP_K : body.get("top_k", 0),
+                    gen_ai_attributes.GEN_AI_REQUEST_TOP_P : body.get("top_p", 0),
+                }
+            ) as gen_ai_client_span:
                 tokens = handler.provider.get_num_tokens_from_body(body)
 
-            if handler.req_webhook and (
-                req_webhook := await self.handle_request_body_req_webhook(
-                    body, handler, handler.req_webhook, parent_span
-                )
-            ):
-                return req_webhook
-
-            if handler.req_regex and (
-                req_regex_resp := self.handle_request_body_req_regex(
-                    body, handler, parent_span=parent_span
-                )
-            ):
-                return req_regex_resp
-
-            if handler.req_moderation:
-                with OtelTracer.get().start_as_current_span(
-                    "moderation",
-                    context=trace.set_span_in_context(parent_span),
-                ):
-                    (client, model) = handler.req_moderation
-                    results = await client.create(
-                        input=handler.provider.all_req_content(body),
-                        model=(model if model != "" else "omni-moderation-latest"),
+                if handler.req_webhook and (
+                    req_webhook := await self.handle_request_body_req_webhook(
+                        body, handler, handler.req_webhook, gen_ai_client_span
                     )
-                    for result in results.results:
-                        if result.flagged:
-                            return error_response(
-                                handler.req_custom_response,
-                                "Rejected by guardrails moderation",
-                            )
+                ):
+                    return req_webhook
 
-            # currently we only count the prompt token for ratelimiting. So,
-            # this is only set here. If we change to count completion token as well
-            # will need to add those into rate_limited_tokens for stats purpose.
-            handler.rate_limited_tokens = tokens
+                if handler.req_regex and (
+                    req_regex_resp := self.handle_request_body_req_regex(
+                        body, handler, parent_span=gen_ai_client_span
+                    )
+                ):
+                    return req_regex_resp
+
+                if handler.req_moderation:
+                    with OtelTracer.get().start_as_current_span(
+                        "moderation",
+                        context=trace.set_span_in_context(gen_ai_client_span),
+                    ):
+                        (client, model) = handler.req_moderation
+                        content = handler.provider.all_req_content(body)
+                        model_name = (model if model != "" else "omni-moderation-latest")
+                        
+                        results = await client.create(
+                            input=content,
+                            model=model_name,
+                        )
+                        for result in results.results:
+                            if result.flagged:
+                                return error_response(
+                                    handler.req_custom_response,
+                                    "Rejected by guardrails moderation",
+                                )
+
+                # currently we only count the prompt token for ratelimiting. So,
+                # this is only set here. If we change to count completion token as well
+                # will need to add those into rate_limited_tokens for stats purpose.
+                handler.rate_limited_tokens = tokens
             return external_processor_pb2.ProcessingResponse(
                 dynamic_metadata=struct_pb2.Struct(
                     # increment tokens for rate limiting
@@ -730,8 +751,8 @@ async def serve() -> None:
         if os.path.exists(sock_path):
             os.unlink(sock_path)
 
-    stats_config = StatsConfig.from_file(file_path="/var/run/stats/stats.json")
-    tracing_config = TracingConfig.from_file(file_path="/var/run/stats/tracing.json")
+    stats_config = StatsConfig.from_file(file_path="/var/run/ai-otel-config/stats.json")
+    tracing_config = TracingConfig.from_file(file_path="/run/ai-otel-config/tracing.json")
 
     address = server_listen_addr
 

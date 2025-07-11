@@ -1,1 +1,1 @@
-{"grpc": {"host": "1.2.3.4", "port": 1234}, "insecure": true}
+{"endpoint":"http://tempo.ai-test:4317","protocol":"grpc","sampler":{"arg":"0.5","type":"traceidratio"},"timeout":"100s","transportSecurity":"insecure"}

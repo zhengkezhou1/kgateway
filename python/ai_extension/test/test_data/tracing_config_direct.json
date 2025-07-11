@@ -1,0 +1,1 @@
+{"endpoint":"http://tempo.ai-test:4317","protocol":"grpc","sampler":{"arg":"0.5","type":"traceidratio"},"timeout":"100s","transportSecurity":"insecure"}
