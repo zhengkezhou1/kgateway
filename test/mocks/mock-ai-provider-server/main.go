@@ -28,7 +28,7 @@ type MockResponse struct {
 var mockData = map[string]MockResponse{
 	// Non streaming:
 	"793764f12a5e331ae08cecab749a022c23867d03c9db18cf00fc4dd1dc89f132": {FilePath: "mocks/routing/azure_non_streaming.json", IsGzip: false},
-	"5248a892608faa159d590ed851e28c80134d6dc13a064e816a23273f70186d5c": {FilePath: "mocks/routing/openai_non_streaming.txt.gz", IsGzip: true},
+	"3d18473ed73d4debe50f5e02fe5441f95387a92af63184ad552dc378e3f02487": {FilePath: "mocks/routing/openai_non_streaming.txt.gz", IsGzip: true},
 	"c9c34d39cb0af7ef19530a58aae8557d951fb1eef1fcaf2b65583cb823ca47a2": {FilePath: "mocks/routing/gemini_non_streaming.json", IsGzip: false},
 	"6be80eb5071d90b7aafefc1e2f11d045acec300c1c71e6bbfce415bb3ede0abd": {FilePath: "mocks/routing/vertex_ai_non_streaming.json", IsGzip: false},
 	// Streaming:

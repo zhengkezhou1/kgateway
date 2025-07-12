@@ -42,5 +42,3 @@ class TestTracingNonStreamRouting(LLMClient):
             and resp.usage.prompt_tokens > 0
             and resp.usage.completion_tokens > 0
         )
-
-        requests.post()

@@ -185,10 +185,7 @@ func (s *tsuite) TestTracing() {
 }
 
 func (s *tsuite) TestNonStreamRouting() {
-	//s.installTempo()
-	s.waitForEnvoyReady()
-
-	s.invokePytest("tracing_non_stream_routing.py", "TEST_OVERRIDE_PROVIDER=true")
+	s.invokePytest("tracing_non_stream_routing.py", "TEST_TOKEN_PASSTHROUGH=true")
 }
 
 //func (s *tsuite) TestRouting() {
