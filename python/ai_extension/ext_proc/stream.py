@@ -56,6 +56,12 @@ class Info:
     For resp, this is set after we handled response_headers.
     """
 
+    path: str = ""
+    """
+    path is the request path from the :path pseudo header
+    This is set while we are looping through the header in set_header()
+    """
+
     def append(self, data: bytes):
         """
         Append data to the body of the Info object.
@@ -81,6 +87,10 @@ class Info:
                     header.raw_value.decode("utf-8")
                 )
             # Never pass through pseudo headers
+            # Capture the path from pseudo header but don't add it to headers
+            if header.key == ":path":
+                self.path = header.raw_value.decode("utf-8")
+                continue
             if header.key.startswith(":"):
                 continue
             for rule in header_rules:

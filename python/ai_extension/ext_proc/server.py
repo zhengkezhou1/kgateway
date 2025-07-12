@@ -339,6 +339,9 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
             handler.req_webhook.forwardHeaders if handler.req_webhook else [],
             headers,
         )
+        handler.req.headers = get_http_header(
+            headers.headers, ":path"
+        )
         auth_header = get_http_header(headers.headers, "authorization").removeprefix(
             "Bearer "
         )
@@ -447,7 +450,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
             )
 
             body = body_jsn
-            operation_name = handler.req.headers.get("path", "")
+            operation_name = handler.req.path
             
             with OtelTracer.get().start_as_current_span(
                 f"{operation_name} {handler.request_model}",

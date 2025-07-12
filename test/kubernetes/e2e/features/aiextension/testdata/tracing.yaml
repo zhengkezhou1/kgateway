@@ -11,7 +11,7 @@ spec:
         - name: ai-monitoring
           containerPort: 9092
       tracing:
-        endpoint: "http://my-otel-collector.svc.cluster.local:4317"
+        endpoint: "http://tempo.ai-test:4317"
         timeout: "100s"
         protocol: "grpc"
         transportSecurity: "insecure"

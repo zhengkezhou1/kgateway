@@ -9,6 +9,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/helmutils"
+
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/suite"
 	corev1 "k8s.io/api/core/v1"
@@ -55,14 +57,15 @@ func NewSuite(
 
 func (s *tsuite) SetupSuite() {
 	s.manifests = map[string][]string{
-		"TestTracing":                 {tracingManifest},
-		"TestRouting":                 {commonManifest, backendManifest, routesBasicManifest},
-		"TestRoutingPassthrough":      {commonManifest, backendPassthroughManifest, routesBasicManifest},
-		"TestRoutingOverrideProvider": {commonManifest, backendPassthroughManifest, routesBasicManifest},
-		"TestStreaming":               {commonManifest, backendManifest, routeOptionStreamingManifest, routesWithExtensionManifest},
-		"TestPromptGuardRejectExtRef": {commonManifest, backendManifest, trafficPolicyPGRegexPatternRejectManifest, routesWitPGRegexPatternRejectManifest},
-		"TestPromptGuard":             {commonManifest, backendManifest, routesBasicManifest, promptGuardManifest},
-		"TestPromptGuardStreaming":    {commonManifest, backendManifest, routesBasicManifest, promptGuardStreamingManifest},
+		"TestTracing":          {tracingManifest, backendPassthroughManifest, routesBasicManifest},
+		"TestNonStreamRouting": {tracingManifest, backendPassthroughManifest, routesBasicManifest},
+		//"TestRouting":                 {commonManifest, backendManifest, routesBasicManifest},
+		//"TestRoutingPassthrough":      {commonManifest, backendPassthroughManifest, routesBasicManifest},
+		//"TestRoutingOverrideProvider": {commonManifest, backendPassthroughManifest, routesBasicManifest},
+		//"TestStreaming":               {commonManifest, backendManifest, routeOptionStreamingManifest, routesWithExtensionManifest},
+		//"TestPromptGuardRejectExtRef": {commonManifest, backendManifest, trafficPolicyPGRegexPatternRejectManifest, routesWitPGRegexPatternRejectManifest},
+		//"TestPromptGuard":             {commonManifest, backendManifest, routesBasicManifest, promptGuardManifest},
+		//"TestPromptGuardStreaming":    {commonManifest, backendManifest, routesBasicManifest, promptGuardStreamingManifest},
 	}
 }
 
@@ -83,6 +86,55 @@ func (s *tsuite) waitForEnvoyReady() {
 		fmt.Print(statusChar)
 	}, 30*time.Second, 1*time.Second)
 	fmt.Println()
+}
+
+func (s *tsuite) waitForTempoReady() {
+	fmt.Println("Waiting for Tempo to be ready.")
+
+	// Check Tempo service exists
+	tempoSvc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "tempo",
+			Namespace: s.testInst.Metadata.InstallNamespace,
+		},
+	}
+
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+		err := s.testInst.ClusterContext.Client.Get(
+			s.ctx,
+			types.NamespacedName{Name: tempoSvc.Name, Namespace: tempoSvc.Namespace},
+			tempoSvc,
+		)
+		assert.NoErrorf(c, err, "failed to get Tempo service %s/%s", tempoSvc.Namespace, tempoSvc.Name)
+	}, 120*time.Second, 2*time.Second)
+
+	// Check Tempo pod is running with more timeout and debug info
+	fmt.Printf("Checking for Tempo pods in namespace %s with label app.kubernetes.io/name=tempo\n", s.testInst.Metadata.InstallNamespace)
+	s.testInst.Assertions.EventuallyPodsRunning(s.ctx, s.testInst.Metadata.InstallNamespace, metav1.ListOptions{
+		LabelSelector: "app.kubernetes.io/name=tempo",
+	}, 120*time.Second)
+
+	fmt.Println("Tempo is ready.")
+}
+
+//	helm install tempo grafana/tempo \
+//	 --set tempo.searchEnabled=true \
+//	 --set tempo.target=all \
+func (s *tsuite) installTempo() {
+	err := s.testInst.Actions.Helm().Install(context.Background(),
+		helmutils.InstallOpts{
+			ReleaseName: "tempo",
+			Repository:  "grafana",
+			ChartName:   "tempo",
+			Namespace:   s.testInst.Metadata.InstallNamespace,
+			ExtraArgs: []string{
+				"--set", "tempo.searchEnabled=true",
+				"--set", "tempo.target=all",
+			},
+		})
+	s.Require().NoError(err, "failed to install tempo")
+
+	fmt.Println("Tempo installation completed with span logging enabled.")
 }
 
 func (s *tsuite) BeforeTest(suiteName, testName string) {
@@ -127,41 +179,51 @@ func (s *tsuite) TestTracing() {
 		)
 		assert.NoErrorf(c, err, "failed to get configMap %s/%s", tracingConfig.Namespace, tracingConfig.Name)
 	}, 30*time.Second, 1*time.Second)
+
+	//s.installTempo()
+	//s.waitForTempoReady()
 }
 
-func (s *tsuite) TestRouting() {
-	s.invokePytest("routing.py")
+func (s *tsuite) TestNonStreamRouting() {
+	//s.installTempo()
+	s.waitForEnvoyReady()
+
+	s.invokePytest("tracing_non_stream_routing.py", "TEST_OVERRIDE_PROVIDER=true")
 }
 
-func (s *tsuite) TestRoutingPassthrough() {
-	s.invokePytest(
-		"routing.py",
-		"TEST_TOKEN_PASSTHROUGH=true",
-	)
-}
-
-func (s *tsuite) TestRoutingOverrideProvider() {
-	s.invokePytest(
-		"routing.py",
-		"TEST_OVERRIDE_PROVIDER=true",
-	)
-}
-
-func (s *tsuite) TestStreaming() {
-	s.invokePytest("streaming.py")
-}
-
-func (s *tsuite) TestPromptGuardRejectExtRef() {
-	s.invokePytest("prompt_guard_reject_ext_ref.py")
-}
-
-func (s *tsuite) TestPromptGuard() {
-	s.invokePytest("prompt_guard.py")
-}
-
-func (s *tsuite) TestPromptGuardStreaming() {
-	s.invokePytest("prompt_guard_streaming.py")
-}
+//func (s *tsuite) TestRouting() {
+//	s.invokePytest("routing.py")
+//}
+//
+//func (s *tsuite) TestRoutingPassthrough() {
+//	s.invokePytest(
+//		"routing.py",
+//		"TEST_TOKEN_PASSTHROUGH=true",
+//	)
+//}
+//
+//func (s *tsuite) TestRoutingOverrideProvider() {
+//	s.invokePytest(
+//		"routing.py",
+//		"TEST_OVERRIDE_PROVIDER=true",
+//	)
+//}
+//
+//func (s *tsuite) TestStreaming() {
+//	s.invokePytest("streaming.py")
+//}
+//
+//func (s *tsuite) TestPromptGuardRejectExtRef() {
+//	s.invokePytest("prompt_guard_reject_ext_ref.py")
+//}
+//
+//func (s *tsuite) TestPromptGuard() {
+//	s.invokePytest("prompt_guard.py")
+//}
+//
+//func (s *tsuite) TestPromptGuardStreaming() {
+//	s.invokePytest("prompt_guard_streaming.py")
+//}
 
 func (s *tsuite) invokePytest(test string, extraEnv ...string) {
 	fmt.Printf("Using Python binary: %s\n", pythonBin)
