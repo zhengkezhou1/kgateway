@@ -58,5 +58,5 @@ jobs:
         shell: bash
         run: |
           echo "Running python unit tests"
-          cd python/ai_extension
-          python3 -m pytest test
+          cd python
+          make unit-tests
