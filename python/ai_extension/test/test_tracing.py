@@ -6,11 +6,10 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from ai_extension.telemetry.tracing import Config as TraceConfig, OtelTracer
 
-
 @pytest.fixture
 def tracing_config():
     """Test fixture for JSON format ConfigMap (standard format)"""
-    return TraceConfig.from_file("ai_extension/test/test_data/tracing_config.json")
+    return TraceConfig.from_file("test/test_data/tracing_config.json")
 
 class TestTracing:
     def test_from_file(self, tracing_config):
