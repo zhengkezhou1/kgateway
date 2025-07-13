@@ -1,5 +1,8 @@
+import os
 from client.client import LLMClient
 import logging
+import tempfile
+import time
 
 import requests
 import json
@@ -42,3 +45,39 @@ class TestTracingNonStreamRouting(LLMClient):
             and resp.usage.prompt_tokens > 0
             and resp.usage.completion_tokens > 0
         )
+
+        # 你的 Tempo 查询服务地址
+        TEMPO_QUERY_URL = os.environ.get("TEST_TEMPO_URL", "")
+
+        traceql_query = '{ name="/openai gpt-4o-mini" }'
+
+        params = {
+            'q': traceql_query
+        }
+    
+        time.sleep(120)
+        # Send GET request
+        resp = requests.get(f"{TEMPO_QUERY_URL}/api/search", params=params)
+        logger.info(f"tempo query response:\n{resp.text}")
+        
+        # 将响应写入临时文件
+        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', prefix='tempo_response_', delete=False) as f:
+            response_data = {
+                "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
+                "tempo_url": TEMPO_QUERY_URL,
+                "query_params": params,
+                "status_code": resp.status_code,
+                "headers": dict(resp.headers),
+                "response_text": resp.text,
+                "response_json": None
+            }
+            
+            # 尝试解析 JSON 响应
+            try:
+                response_data["response_json"] = resp.json()
+            except Exception as e:
+                response_data["json_parse_error"] = str(e)
+            
+            json.dump(response_data, f, indent=2, ensure_ascii=False)
+            temp_file_path = f.name
+    

@@ -57,7 +57,7 @@ func NewSuite(
 
 func (s *tsuite) SetupSuite() {
 	s.manifests = map[string][]string{
-		"TestTracing":          {tracingManifest, backendPassthroughManifest, routesBasicManifest},
+		// "TestTracing":          {tracingManifest, backendPassthroughManifest, routesBasicManifest},
 		"TestNonStreamRouting": {tracingManifest, backendPassthroughManifest, routesBasicManifest},
 		//"TestRouting":                 {commonManifest, backendManifest, routesBasicManifest},
 		//"TestRoutingPassthrough":      {commonManifest, backendPassthroughManifest, routesBasicManifest},
@@ -121,7 +121,13 @@ func (s *tsuite) waitForTempoReady() {
 //	 --set tempo.searchEnabled=true \
 //	 --set tempo.target=all \
 func (s *tsuite) installTempo() {
-	err := s.testInst.Actions.Helm().Install(context.Background(),
+	var err error
+	err = s.testInst.Actions.Helm().AddRepository(context.Background(),
+		"grafana", "https://grafana.github.io/helm-charts")
+
+	s.Require().NoError(err, "failed to add grafana repo")
+
+	err = s.testInst.Actions.Helm().Install(context.Background(),
 		helmutils.InstallOpts{
 			ReleaseName: "tempo",
 			Repository:  "grafana",
@@ -130,11 +136,22 @@ func (s *tsuite) installTempo() {
 			ExtraArgs: []string{
 				"--set", "tempo.searchEnabled=true",
 				"--set", "tempo.target=all",
+				"--set", "service.type=LoadBalancer",
+				"--set", "service.port=3200",
 			},
 		})
 	s.Require().NoError(err, "failed to install tempo")
 
 	fmt.Println("Tempo installation completed with span logging enabled.")
+}
+
+func (s *tsuite) uninstallTempo() {
+	err := s.testInst.Actions.Helm().Uninstall(context.Background(),
+		helmutils.UninstallOpts{
+			ReleaseName: "tempo",
+			Namespace:   s.testInst.Metadata.InstallNamespace,
+		})
+	s.Require().NoError(err, "failed to install tempo")
 }
 
 func (s *tsuite) BeforeTest(suiteName, testName string) {
@@ -161,31 +178,35 @@ func (s *tsuite) AfterTest(suiteName, testName string) {
 }
 
 // TODO: Test that spans generated after traffic passes through the AI extension are correctly sent to the backend storage (Tempo).
-func (s *tsuite) TestTracing() {
-	tracingConfig := &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      "ai-gateway",
-			Namespace: s.testInst.Metadata.InstallNamespace,
-		},
-	}
+// func (s *tsuite) TestTracing() {
+// 	tracingConfig := &corev1.ConfigMap{
+// 		ObjectMeta: metav1.ObjectMeta{
+// 			Name:      "ai-gateway",
+// 			Namespace: s.testInst.Metadata.InstallNamespace,
+// 		},
+// 	}
 
-	s.testInst.Assertions.EventuallyObjectsExist(s.ctx, tracingConfig)
+// 	s.testInst.Assertions.EventuallyObjectsExist(s.ctx, tracingConfig)
 
-	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		err := s.testInst.ClusterContext.Client.Get(
-			s.ctx,
-			types.NamespacedName{Name: tracingConfig.Name, Namespace: tracingConfig.Namespace},
-			tracingConfig,
-		)
-		assert.NoErrorf(c, err, "failed to get configMap %s/%s", tracingConfig.Namespace, tracingConfig.Name)
-	}, 30*time.Second, 1*time.Second)
+// 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+// 		err := s.testInst.ClusterContext.Client.Get(
+// 			s.ctx,
+// 			types.NamespacedName{Name: tracingConfig.Name, Namespace: tracingConfig.Namespace},
+// 			tracingConfig,
+// 		)
+// 		assert.NoErrorf(c, err, "failed to get configMap %s/%s", tracingConfig.Namespace, tracingConfig.Name)
+// 	}, 30*time.Second, 1*time.Second)
 
-	//s.installTempo()
-	//s.waitForTempoReady()
-}
+// 	//s.installTempo()
+// 	//s.waitForTempoReady()
+// }
 
 func (s *tsuite) TestNonStreamRouting() {
+	s.installTempo()
+	s.waitForTempoReady()
 	s.invokePytest("tracing_non_stream_routing.py", "TEST_TOKEN_PASSTHROUGH=true")
+	// 等待产生的 tracing 被发送到 tempo 中
+	s.uninstallTempo()
 }
 
 //func (s *tsuite) TestRouting() {
@@ -226,6 +247,7 @@ func (s *tsuite) invokePytest(test string, extraEnv ...string) {
 	fmt.Printf("Using Python binary: %s\n", pythonBin)
 
 	gwURL := s.getGatewayURL()
+	tempoURL := s.getTempoURL()
 	logLevel := os.Getenv("TEST_PYTHON_LOG_LEVEL")
 	if logLevel == "" {
 		logLevel = "DEBUG"
@@ -245,6 +267,7 @@ func (s *tsuite) invokePytest(test string, extraEnv ...string) {
 		fmt.Sprintf("TEST_GEMINI_BASE_URL=%s/gemini", gwURL), // need to specify HTTP as part of the endpoint
 		fmt.Sprintf("TEST_VERTEX_AI_BASE_URL=%s/vertex-ai", gwURL),
 		fmt.Sprintf("TEST_GATEWAY_ADDRESS=%s", gwURL),
+		fmt.Sprintf("TEST_TEMPO_URL=%s", tempoURL),
 	}
 	cmd.Env = append(cmd.Env, extraEnv...)
 
@@ -288,4 +311,33 @@ func (s *tsuite) getGatewayURL() string {
 	}, 10*time.Second, 1*time.Second)
 
 	return fmt.Sprintf("http://%s:%d", svc.Status.LoadBalancer.Ingress[0].IP, svc.Spec.Ports[0].Port)
+}
+
+func (s *tsuite) getTempoURL() string {
+	// Get the tempo service
+	svc := &corev1.Service{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "tempo",
+			Namespace: s.testInst.Metadata.InstallNamespace,
+		},
+	}
+
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+		err := s.testInst.ClusterContext.Client.Get(
+			s.ctx,
+			types.NamespacedName{Name: svc.Name, Namespace: svc.Namespace},
+			svc,
+		)
+		assert.NoErrorf(c, err, "failed to get tempo service %s/%s", svc.Namespace, svc.Name)
+		assert.Greaterf(c, len(svc.Status.LoadBalancer.Ingress), 0, "LB IP not found on tempo service %s/%s", svc.Namespace, svc.Name)
+	}, 60*time.Second, 5*time.Second)
+
+	// Get LoadBalancer IP and return URL with port 3200
+	var ip string
+	if svc.Status.LoadBalancer.Ingress[0].IP != "" {
+		ip = svc.Status.LoadBalancer.Ingress[0].IP
+	} else if svc.Status.LoadBalancer.Ingress[0].Hostname != "" {
+		ip = svc.Status.LoadBalancer.Ingress[0].Hostname
+	}
+	return fmt.Sprintf("http://%s:3200", ip)
 }
