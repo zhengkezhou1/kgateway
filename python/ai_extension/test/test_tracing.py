@@ -128,7 +128,7 @@ class TestTracing:
         "protocol,endpoint,expected_exporter_type",
         [
             ("grpc", "http://test:4317", "grpc"),
-            ("http", "http://test:4318/v1/traces", "http"),
+            ("http/json", "http://test:4318/v1/traces", "http"),
             ("http/protobuf", "http://test:4318/v1/traces", "http"),
         ],
     )

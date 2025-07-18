@@ -144,7 +144,7 @@ class Config(BaseModel):
                     f"Created gRPC exporter - endpoint: {self.endpoint}, insecure: {self.transportSecurity == 'insecure'}, timeout: {self.timeout}"
                 )
                 return exporter
-            elif self.protocol in ["http", "http/protobuf"]:
+            elif self.protocol in ["http/json", "http/protobuf"]:
                 from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
                     OTLPSpanExporter,
                 )
