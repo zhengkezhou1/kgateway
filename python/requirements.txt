@@ -12,10 +12,10 @@ python-multipart
 # build to fail. Temp workaround is to limit spacy to < 3.8.0. Switch over to pyproject.toml and use
 # platform specific deps if needed
 spacy<3.8.0
-numpy==1.26.4
+numpy~=1.26.4
 presidio_analyzer
 presidio_anonymizer
-opentelemetry-distro==0.56b0
-opentelemetry-instrumentation-grpc==0.56b0
-opentelemetry-exporter-otlp==1.35.0
+opentelemetry-distro~=0.56b0
+opentelemetry-instrumentation-grpc~=0.56b0
+opentelemetry-exporter-otlp~=1.35.0
 httpx

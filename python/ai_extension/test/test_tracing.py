@@ -96,9 +96,9 @@ class TestTracing:
         expected_sampler = _KNOWN_SAMPLERS[expected_type]
 
         # Note: _KNOWN_SAMPLERS stores different types of content:
-        # - "always_on", "always_off", "parentbased_always_on", "parentbased_always_off" 
+        # - "always_on", "always_off", "parentbased_always_on", "parentbased_always_off"
         #   store pre-created singleton instances
-        # - "traceidratio", "parentbased_traceidratio" 
+        # - "traceidratio", "parentbased_traceidratio"
         #   store classes (because they need to create different instances based on parameters)
 
         if expected_type in ["traceidratio", "parentbased_traceidratio"]:
