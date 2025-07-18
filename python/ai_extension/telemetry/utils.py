@@ -8,5 +8,5 @@ def read_mounted_config_map(file_path: str) -> dict:
     """
     with open(file_path, "r", encoding="utf-8") as file:
         content = file.read().strip()
-    
+
     return json.loads(content)

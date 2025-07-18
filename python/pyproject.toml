@@ -1,0 +1,30 @@
+[tool.pyright]
+include = ["ai_extension"]
+exclude = ["**/__pycache__", "**/.pytest_cache", "**/*_pb2.py", "**/*_pb2.pyi"]
+
+pythonVersion = "3.12"
+typeCheckingMode = "basic"
+
+reportInvalidTypeForm = false
+reportAttributeAccessIssue = false
+reportOptionalMemberAccess = false
+reportArgumentType = false
+reportAssignmentType = false
+reportMissingImports = false
+reportUnknownMemberType = false
+reportUnknownVariableType = false
+reportIncompatibleMethodOverride = false
+reportGeneralTypeIssues = false
+reportOptionalSubscript = false
+reportOptionalCall = false
+reportOptionalIterable = false
+reportOptionalContextManager = false
+reportOptionalOperand = false
+reportTypedDictNotRequiredAccess = false
+
+reportUndefinedVariable = true
+reportUnboundVariable = true
+reportMissingTypeStubs = false
+
+useLibraryCodeForTypes = true
+autoImportCompletions = true

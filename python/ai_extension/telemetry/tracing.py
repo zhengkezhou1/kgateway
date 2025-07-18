@@ -22,11 +22,12 @@ logger: logging.Logger = logging.getLogger().getChild(
     "kgateway-ai-ext.external_processor"
 )
 
+
 class Sampler(BaseModel):
     type: str = Field(default=None)
     arg: Union[float, str] = Field(default=None)
-    
-    @field_validator('arg')
+
+    @field_validator("arg")
     @classmethod
     def validate_arg(cls, v):
         if v is None:
@@ -37,6 +38,7 @@ class Sampler(BaseModel):
             except ValueError:
                 raise ValueError(f"Invalid sampler arg value: {v}")
         return float(v)
+
 
 class Config(BaseModel):
     """
@@ -50,30 +52,30 @@ class Config(BaseModel):
     timeout: Union[int, str] = Field(default=None)
     sampler: Sampler = Field(default_factory=Sampler)
     transportSecurity: str = Field(default="insecure")
-    
-    @field_validator('timeout')
+
+    @field_validator("timeout")
     @classmethod
     def validate_timeout(cls, v):
         if v is None:
             return v
         if isinstance(v, str):
-            # Parse timeout strings like "100s", "5m", "1h" 
-            match = re.match(r'^(\d+)([smh]?)$', v)
+            # Parse timeout strings like "100s", "5m", "1h"
+            match = re.match(r"^(\d+)([smh]?)$", v)
             if match:
                 value, unit = match.groups()
                 value = int(value)
-                if unit == 's' or unit == '':
+                if unit == "s" or unit == "":
                     return value
-                elif unit == 'm':
+                elif unit == "m":
                     return value * 60
-                elif unit == 'h':
+                elif unit == "h":
                     return value * 3600
             raise ValueError(f"Invalid timeout format: {v}")
         return int(v)
 
     def tracer(self) -> Tracer:
         logger.debug("Initializing OpenTelemetry tracer")
-        
+
         # Initialize tracer provider
         resource = Resource.create(attributes={SERVICE_NAME: "kgateway-ai-extension"})
         sampler = self._create_sampler()
@@ -84,17 +86,19 @@ class Config(BaseModel):
         # Tracer error messages and retries when tracing is disabled.
         if len(self.endpoint) > 0:
             logger.info(f"Tracing enabled, publishing to endpoint: {self.endpoint}")
-            logger.debug(f"Tracing configuration - protocol: {self.protocol}, timeout: {self.timeout}, transportSecurity: {self.transportSecurity}")
-            
+            logger.debug(
+                f"Tracing configuration - protocol: {self.protocol}, timeout: {self.timeout}, transportSecurity: {self.transportSecurity}"
+            )
+
             try:
                 exporter = self._create_exporter()
                 logger.debug(f"Created OTLP exporter for protocol: {self.protocol}")
-                
+
                 # Configure span processor
                 span_processor = BatchSpanProcessor(exporter)
                 tracer_provider.add_span_processor(span_processor)
                 logger.debug("Added BatchSpanProcessor to TracerProvider")
-                
+
             except Exception as e:
                 logger.error(f"Failed to create exporter or span processor: {e}")
         else:
@@ -123,26 +127,35 @@ class Config(BaseModel):
         Create an OTLP exporter based on the configuration.
         """
         logger.debug(f"Creating OTLP exporter for protocol: {self.protocol}")
-        
+
         try:
             if self.protocol == "grpc":
-                from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+                from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import (
+                    OTLPSpanExporter,
+                )
+
                 logger.debug("Using gRPC OTLP exporter")
                 exporter = OTLPSpanExporter(
                     endpoint=self.endpoint,
                     insecure=self.transportSecurity == "insecure",
-                    timeout=self.timeout
+                    timeout=self.timeout,
                 )
-                logger.debug(f"Created gRPC exporter - endpoint: {self.endpoint}, insecure: {self.transportSecurity == 'insecure'}, timeout: {self.timeout}")
+                logger.debug(
+                    f"Created gRPC exporter - endpoint: {self.endpoint}, insecure: {self.transportSecurity == 'insecure'}, timeout: {self.timeout}"
+                )
                 return exporter
             elif self.protocol in ["http", "http/protobuf"]:
-                from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
+                from opentelemetry.exporter.otlp.proto.http.trace_exporter import (
+                    OTLPSpanExporter,
+                )
+
                 logger.debug("Using HTTP OTLP exporter")
                 exporter = OTLPSpanExporter(
-                    endpoint=self.endpoint,
-                    timeout=self.timeout
+                    endpoint=self.endpoint, timeout=self.timeout
                 )
-                logger.debug(f"Created HTTP exporter - endpoint: {self.endpoint}, timeout: {self.timeout}")
+                logger.debug(
+                    f"Created HTTP exporter - endpoint: {self.endpoint}, timeout: {self.timeout}"
+                )
                 return exporter
             else:
                 error_msg = f"Unsupported protocol: {self.protocol}"
@@ -151,49 +164,64 @@ class Config(BaseModel):
         except Exception as e:
             logger.error(f"Failed to create OTLP exporter: {e}")
             raise
-        
+
     def _create_sampler(self):
         """
         Create a sampler based on the configuration.
         """
         sampler_type = self.sampler.type
         sampler_arg = self.sampler.arg
-        
+
         logger.debug(f"Creating sampler - type: {sampler_type}, arg: {sampler_arg}")
-        
+
         if sampler_type == "always_on":
             from opentelemetry.sdk.trace.sampling import ALWAYS_ON
+
             logger.debug("Using ALWAYS_ON sampler")
             return ALWAYS_ON
         elif sampler_type == "always_off":
             from opentelemetry.sdk.trace.sampling import ALWAYS_OFF
+
             logger.debug("Using ALWAYS_OFF sampler")
             return ALWAYS_OFF
         elif sampler_type == "parentbased_always_on":
             from opentelemetry.sdk.trace.sampling import DEFAULT_ON
+
             logger.debug("Using DEFAULT_ON (parent-based always on) sampler")
             return DEFAULT_ON
         elif sampler_type == "parentbased_always_off":
             from opentelemetry.sdk.trace.sampling import DEFAULT_OFF
+
             logger.debug("Using DEFAULT_OFF (parent-based always off) sampler")
             return DEFAULT_OFF
         elif sampler_type == "traceidratio":
             from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
+
             if sampler_arg is None:
-                logger.warning("TraceIdRatioBased sampler requires an 'arg' value. Defaulting to 1.0.")
+                logger.warning(
+                    "TraceIdRatioBased sampler requires an 'arg' value. Defaulting to 1.0."
+                )
                 sampler_arg = 1.0
             logger.debug(f"Using TraceIdRatioBased sampler with ratio: {sampler_arg}")
             return TraceIdRatioBased(sampler_arg)
         elif sampler_type == "parentbased_traceidratio":
             from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
+
             if sampler_arg is None:
-                logger.warning("TraceIdRatioBased sampler requires an 'arg' value. Defaulting to 1.0.")
+                logger.warning(
+                    "TraceIdRatioBased sampler requires an 'arg' value. Defaulting to 1.0."
+                )
                 sampler_arg = 1.0
-            logger.debug(f"Using ParentBased TraceIdRatioBased sampler with ratio: {sampler_arg}")
+            logger.debug(
+                f"Using ParentBased TraceIdRatioBased sampler with ratio: {sampler_arg}"
+            )
             return TraceIdRatioBased(sampler_arg)
         else:
-            logger.warning(f"Unknown or unspecified sampler type: {sampler_type}. Using default ALWAYS_ON sampler.")
+            logger.warning(
+                f"Unknown or unspecified sampler type: {sampler_type}. Using default ALWAYS_ON sampler."
+            )
             from opentelemetry.sdk.trace.sampling import ALWAYS_ON
+
             return ALWAYS_ON
 
 
@@ -219,4 +247,6 @@ class OtelTracer:
             cls.__tracer = tracer
             logger.info("OtelTracer initialized successfully")
         else:
-            logger.warning("OtelTracer is already initialized. Skipping re-initialization.")
+            logger.warning(
+                "OtelTracer is already initialized. Skipping re-initialization."
+            )
