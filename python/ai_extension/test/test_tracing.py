@@ -1,8 +1,12 @@
 import pytest
-from opentelemetry.trace import Tracer, NoOpTracer
-from opentelemetry.sdk.trace.sampling import ALWAYS_ON, TraceIdRatioBased, StaticSampler
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
+from opentelemetry.sdk.trace.export import BatchSpanProcessor
+from opentelemetry.sdk.trace.sampling import (
+    StaticSampler,
+    _KNOWN_SAMPLERS,
+)
+from opentelemetry.trace import Tracer, NoOpTracer
+
 from telemetry.tracing import Config as TraceConfig, OtelTracer
 
 
@@ -70,24 +74,18 @@ class TestTracing:
     @pytest.mark.parametrize(
         "sampler_type,sampler_arg,expected_type,expected_value",
         [
-            ("alwaysOn", None, "static", "ALWAYS_ON"),
-            ("alwaysOff", None, "static", "ALWAYS_OFF"),
-            ("parentbasedAlwaysOn", None, "static", "DEFAULT_ON"),
-            ("parentbasedAlwaysOff", None, "static", "DEFAULT_OFF"),
-            ("traceidratio", 0.25, "ratio", 0.25),
-            ("traceidratio", 0.75, "ratio", 0.75),
+            ("alwaysOn", None, "always_on", None),
+            ("alwaysOff", None, "always_off", None),
+            ("parentbasedAlwaysOn", None, "parentbased_always_on", None),
+            ("parentbasedAlwaysOff", None, "parentbased_always_off", None),
+            ("traceidratio", 0.25, "traceidratio", 0.25),
+            ("parentbasedTraceidratio", None, "parentbased_traceidratio", None),
         ],
     )
     def test_different_sampler_types(
         self, sampler_type, sampler_arg, expected_type, expected_value
     ):
         """Test that different sampler types are created correctly"""
-        from opentelemetry.sdk.trace.sampling import (
-            ALWAYS_OFF,
-            DEFAULT_ON,
-            DEFAULT_OFF,
-        )
-
         sampler_config = {"type": sampler_type}
         if sampler_arg is not None:
             sampler_config["arg"] = sampler_arg
@@ -95,17 +93,20 @@ class TestTracing:
         config = self._create_test_config(sampler=sampler_config)
         sampler = config._create_sampler()
 
-        if expected_type == "static":
-            expected_sampler = {
-                "ALWAYS_ON": ALWAYS_ON,
-                "ALWAYS_OFF": ALWAYS_OFF,
-                "DEFAULT_ON": DEFAULT_ON,
-                "DEFAULT_OFF": DEFAULT_OFF,
-            }[expected_value]
-            assert sampler == expected_sampler
-        elif expected_type == "ratio":
-            assert isinstance(sampler, TraceIdRatioBased)
-            assert sampler._rate == expected_value
+        expected_sampler = _KNOWN_SAMPLERS[expected_type]
+
+        # Note: _KNOWN_SAMPLERS stores different types of content:
+        # - "always_on", "always_off", "parentbased_always_on", "parentbased_always_off" 
+        #   store pre-created singleton instances
+        # - "traceidratio", "parentbased_traceidratio" 
+        #   store classes (because they need to create different instances based on parameters)
+
+        if expected_type in ["traceidratio", "parentbased_traceidratio"]:
+            assert isinstance(sampler, expected_sampler)
+            if expected_type == "traceidratio":
+                assert sampler._rate == expected_value
+        else:
+            assert sampler is expected_sampler
 
     @pytest.mark.parametrize(
         "timeout_input,expected_seconds",
