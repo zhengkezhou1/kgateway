@@ -194,7 +194,7 @@ class Config(BaseModel):
 
             logger.debug("Using DEFAULT_OFF (parent-based always off) sampler")
             return DEFAULT_OFF
-        elif sampler_type == "traceidratio":
+        elif sampler_type == "traceidratio" or sampler_type == "parentbasedTraceidratio":
             from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
 
             if sampler_arg is None:
@@ -203,18 +203,6 @@ class Config(BaseModel):
                 )
                 sampler_arg = 1.0
             logger.debug(f"Using TraceIdRatioBased sampler with ratio: {sampler_arg}")
-            return TraceIdRatioBased(sampler_arg)
-        elif sampler_type == "parentbasedTraceidratio":
-            from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
-
-            if sampler_arg is None:
-                logger.warning(
-                    "TraceIdRatioBased sampler requires an 'arg' value. Defaulting to 1.0."
-                )
-                sampler_arg = 1.0
-            logger.debug(
-                f"Using ParentBased TraceIdRatioBased sampler with ratio: {sampler_arg}"
-            )
             return TraceIdRatioBased(sampler_arg)
         else:
             logger.warning(
