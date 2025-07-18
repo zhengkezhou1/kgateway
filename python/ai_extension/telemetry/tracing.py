@@ -174,22 +174,22 @@ class Config(BaseModel):
 
         logger.debug(f"Creating sampler - type: {sampler_type}, arg: {sampler_arg}")
 
-        if sampler_type == "always_on":
+        if sampler_type == "alwaysOn":
             from opentelemetry.sdk.trace.sampling import ALWAYS_ON
 
-            logger.debug("Using ALWAYS_ON sampler")
+            logger.debug("Using ALWAYSON sampler")
             return ALWAYS_ON
-        elif sampler_type == "always_off":
+        elif sampler_type == "alwaysOff":
             from opentelemetry.sdk.trace.sampling import ALWAYS_OFF
 
             logger.debug("Using ALWAYS_OFF sampler")
             return ALWAYS_OFF
-        elif sampler_type == "parentbased_always_on":
+        elif sampler_type == "parentbasedAlwaysOn":
             from opentelemetry.sdk.trace.sampling import DEFAULT_ON
 
             logger.debug("Using DEFAULT_ON (parent-based always on) sampler")
             return DEFAULT_ON
-        elif sampler_type == "parentbased_always_off":
+        elif sampler_type == "parentbasedAlwaysOff":
             from opentelemetry.sdk.trace.sampling import DEFAULT_OFF
 
             logger.debug("Using DEFAULT_OFF (parent-based always off) sampler")
@@ -204,7 +204,7 @@ class Config(BaseModel):
                 sampler_arg = 1.0
             logger.debug(f"Using TraceIdRatioBased sampler with ratio: {sampler_arg}")
             return TraceIdRatioBased(sampler_arg)
-        elif sampler_type == "parentbased_traceidratio":
+        elif sampler_type == "parentbasedTraceidratio":
             from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
 
             if sampler_arg is None:

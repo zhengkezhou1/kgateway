@@ -1,6 +1,6 @@
 import pytest
 from opentelemetry.trace import Tracer, NoOpTracer
-from opentelemetry.sdk.trace.sampling import TraceIdRatioBased
+from opentelemetry.sdk.trace.sampling import ALWAYS_ON, TraceIdRatioBased, StaticSampler
 from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 from telemetry.tracing import Config as TraceConfig, OtelTracer
@@ -11,6 +11,7 @@ def tracing_config():
     """Test fixture for JSON format ConfigMap (standard format)"""
     return TraceConfig.from_file("test/test_data/tracing_config.json")
 
+
 @pytest.fixture(autouse=True)
 def reset_tracer():
     """Reset the OtelTracer state before each test"""
@@ -18,13 +19,13 @@ def reset_tracer():
     yield
     # Reset after test to ensure no state leakage
     OtelTracer._OtelTracer__tracer = None
-    
+
+
 class TestTracing:
     def test_from_file(self, tracing_config):
         assert tracing_config.endpoint == "http://tempo.ai-test:4317"
         assert tracing_config.protocol == "grpc"
-        assert tracing_config.sampler.type == "traceidratio"
-        assert tracing_config.sampler.arg == 0.5  # converted from string "0.5" to float
+        assert tracing_config.sampler.type == "alwaysOn"
         assert (
             tracing_config.timeout == 100
         )  # converted from string "100s" to int (seconds)
@@ -49,18 +50,16 @@ class TestTracing:
 
         # Verify sampler configuration
         sampler = tracer.sampler
-        assert isinstance(sampler, TraceIdRatioBased)
-        assert sampler._rate == 0.5
+        assert isinstance(sampler, StaticSampler)
 
         # Verify span processor and exporter configuration
         self._verify_span_processor_configuration(tracer, tracing_config)
 
     def test_sampler_creation(self, tracing_config):
         """Test that different sampler types are created correctly"""
-        # Test the current configuration (traceidratio)
+        # Test the current configuration (always_on)
         sampler = tracing_config._create_sampler()
-        assert isinstance(sampler, TraceIdRatioBased)
-        assert sampler._rate == 0.5
+        assert isinstance(sampler, StaticSampler)
 
     def test_exporter_creation(self, tracing_config):
         """Test that exporter is created with correct configuration"""
@@ -71,10 +70,10 @@ class TestTracing:
     @pytest.mark.parametrize(
         "sampler_type,sampler_arg,expected_type,expected_value",
         [
-            ("always_on", None, "static", "ALWAYS_ON"),
-            ("always_off", None, "static", "ALWAYS_OFF"),
-            ("parentbased_always_on", None, "static", "DEFAULT_ON"),
-            ("parentbased_always_off", None, "static", "DEFAULT_OFF"),
+            ("alwaysOn", None, "static", "ALWAYS_ON"),
+            ("alwaysOff", None, "static", "ALWAYS_OFF"),
+            ("parentbasedAlwaysOn", None, "static", "DEFAULT_ON"),
+            ("parentbasedAlwaysOff", None, "static", "DEFAULT_OFF"),
             ("traceidratio", 0.25, "ratio", 0.25),
             ("traceidratio", 0.75, "ratio", 0.75),
         ],
@@ -84,7 +83,6 @@ class TestTracing:
     ):
         """Test that different sampler types are created correctly"""
         from opentelemetry.sdk.trace.sampling import (
-            ALWAYS_ON,
             ALWAYS_OFF,
             DEFAULT_ON,
             DEFAULT_OFF,
