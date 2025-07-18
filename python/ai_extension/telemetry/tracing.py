@@ -24,8 +24,8 @@ logger: logging.Logger = logging.getLogger().getChild(
 
 
 class Sampler(BaseModel):
-    type: str = Field(default=None)
-    arg: Union[float, str] = Field(default=None)
+    type: str | None = Field(default=None)
+    arg: Union[float, str] | None = Field(default=None)
 
     @field_validator("arg")
     @classmethod
@@ -48,10 +48,10 @@ class Config(BaseModel):
     """
 
     endpoint: str = Field(default="")
-    protocol: str = Field(default="grpc")
-    timeout: Union[int, str] = Field(default=None)
-    sampler: Sampler = Field(default_factory=Sampler)
-    transportSecurity: str = Field(default="insecure")
+    protocol: str | None = Field(default="grpc")
+    timeout: Union[int, str] | None = Field(default=None)
+    sampler: Sampler | None = Field(default_factory=Sampler)
+    transportSecurity: str | None = Field(default="insecure")
 
     @field_validator("timeout")
     @classmethod
