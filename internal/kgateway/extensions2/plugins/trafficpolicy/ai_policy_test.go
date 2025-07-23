@@ -353,7 +353,7 @@ func TestDefault(t *testing.T) {
 			backendExtprocSettings := &envoy_ext_proc_v3.ExtProcPerRoute{
 				Override: &envoy_ext_proc_v3.ExtProcPerRoute_Overrides{
 					Overrides: &envoy_ext_proc_v3.ExtProcOverrides{
-						GrpcInitialMetadata: []*envoy_config_core_v3.HeaderValue{},
+						GrpcInitialMetadata: []*envoycorev3.HeaderValue{},
 					},
 				},
 			}
