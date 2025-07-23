@@ -19,3 +19,4 @@ opentelemetry-distro
 opentelemetry-instrumentation-grpc
 opentelemetry-exporter-otlp-proto-grpc
 httpx
+httpx_mock
