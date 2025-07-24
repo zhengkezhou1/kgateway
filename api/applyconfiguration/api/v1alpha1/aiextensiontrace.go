@@ -12,10 +12,10 @@ import (
 // AiExtensionTraceApplyConfiguration represents a declarative configuration of the AiExtensionTrace type for use
 // with apply.
 type AiExtensionTraceApplyConfiguration struct {
-	EndPoint          *v1.AbsoluteURI                        `json:"endpoint,omitempty"`
-	Sampler           *OTelTracesSamplerApplyConfiguration   `json:"sampler,omitempty"`
-	Timeout           *metav1.Duration                       `json:"timeout,omitempty"`
-	Protocol          *apiv1alpha1.OTLPTracesProtocolType    `json:"protocol,omitempty"`
+	EndPoint *v1.AbsoluteURI                      `json:"endpoint,omitempty"`
+	Sampler  *OTelTracesSamplerApplyConfiguration `json:"sampler,omitempty"`
+	Timeout  *metav1.Duration                     `json:"timeout,omitempty"`
+	Protocol *apiv1alpha1.OTLPTracesProtocolType  `json:"protocol,omitempty"`
 }
 
 // AiExtensionTraceApplyConfiguration constructs a declarative configuration of the AiExtensionTrace type for use with

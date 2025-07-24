@@ -165,10 +165,10 @@ type HelmAIExtension struct {
 }
 
 type helmAITracing struct {
-	EndPoint          gwv1.AbsoluteURI      `json:"endpoint"`
-	Sampler           *helmAITracingSampler `json:"sampler,omitempty"`
-	Timeout           *metav1.Duration      `json:"timeout,omitempty"`
-	Protocol          *string               `json:"protocol,omitempty"`
+	EndPoint gwv1.AbsoluteURI      `json:"endpoint"`
+	Sampler  *helmAITracingSampler `json:"sampler,omitempty"`
+	Timeout  *metav1.Duration      `json:"timeout,omitempty"`
+	Protocol *string               `json:"protocol,omitempty"`
 }
 
 type helmAITracingSampler struct {
