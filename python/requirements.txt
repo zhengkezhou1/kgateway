@@ -19,4 +19,4 @@ opentelemetry-distro
 opentelemetry-instrumentation-grpc
 opentelemetry-exporter-otlp-proto-grpc
 httpx
-httpx==0.28.*
+pytest-httpx
