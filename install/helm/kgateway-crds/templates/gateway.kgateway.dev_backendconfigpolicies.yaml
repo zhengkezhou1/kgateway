@@ -185,6 +185,9 @@ spec:
                     - WeightedLb
                     type: string
                   maglev:
+                    properties:
+                      useHostnameForHashing:
+                        type: boolean
                     type: object
                   random:
                     type: object
@@ -196,6 +199,8 @@ spec:
                       minimumRingSize:
                         format: int64
                         type: integer
+                      useHostnameForHashing:
+                        type: boolean
                     type: object
                   roundRobin:
                     properties:
@@ -223,9 +228,6 @@ spec:
                     x-kubernetes-validations:
                     - message: invalid duration value
                       rule: matches(self, '^([0-9]{1,5}(h|m|s|ms)){1,4}$')
-                  useHostnameForHashing:
-                    default: false
-                    type: boolean
                 type: object
                 x-kubernetes-validations:
                 - message: at most one of the fields in [leastRequest roundRobin ringHash

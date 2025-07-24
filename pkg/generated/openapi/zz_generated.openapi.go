@@ -4574,14 +4574,6 @@ func schema_kgateway_v2_api_v1alpha1_LoadBalancer(ref common.ReferenceCallback) 
 							Format:      "",
 						},
 					},
-					"useHostnameForHashing": {
-						SchemaProps: spec.SchemaProps{
-							Description: "UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing. Defaults to false.",
-							Default:     false,
-							Type:        []string{"boolean"},
-							Format:      "",
-						},
-					},
 					"closeConnectionsOnHostSetChange": {
 						SchemaProps: spec.SchemaProps{
 							Description: "If set to true, the load balancer will drain connections when the host set changes.\n\nRing Hash or Maglev can be used to ensure that clients with the same key are routed to the same upstream host. Distruptions can cause new connections with the same key as existing connections to be routed to different hosts. Enabling this feature will cause the load balancer to drain existing connections when the host set changes, ensuring that new connections with the same key are consistently routed to the same host. Connections are not immediately closed, but are allowed to drain before being closed.",
@@ -4631,6 +4623,15 @@ func schema_kgateway_v2_api_v1alpha1_LoadBalancerMaglevConfig(ref common.Referen
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
 				Type: []string{"object"},
+				Properties: map[string]spec.Schema{
+					"useHostnameForHashing": {
+						SchemaProps: spec.SchemaProps{
+							Description: "UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing. Defaults to false.",
+							Type:        []string{"boolean"},
+							Format:      "",
+						},
+					},
+				},
 			},
 		},
 	}
@@ -4665,6 +4666,13 @@ func schema_kgateway_v2_api_v1alpha1_LoadBalancerRingHashConfig(ref common.Refer
 							Description: "MaximumRingSize is the maximum size of the ring.",
 							Type:        []string{"integer"},
 							Format:      "int64",
+						},
+					},
+					"useHostnameForHashing": {
+						SchemaProps: spec.SchemaProps{
+							Description: "UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing. Defaults to false.",
+							Type:        []string{"boolean"},
+							Format:      "",
 						},
 					},
 				},

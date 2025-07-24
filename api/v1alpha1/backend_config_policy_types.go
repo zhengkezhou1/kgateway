@@ -321,12 +321,6 @@ type LoadBalancer struct {
 	// +kubebuilder:validation:Enum=WeightedLb
 	LocalityType *LocalityType `json:"localityType,omitempty"`
 
-	// UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing.
-	// Defaults to false.
-	// +optional
-	// +default=false
-	UseHostnameForHashing bool `json:"useHostnameForHashing,omitempty"`
-
 	// If set to true, the load balancer will drain connections when the host set changes.
 	//
 	// Ring Hash or Maglev can be used to ensure that clients with the same key
@@ -371,13 +365,21 @@ type LoadBalancerRingHashConfig struct {
 	// MaximumRingSize is the maximum size of the ring.
 	// +optional
 	MaximumRingSize *uint64 `json:"maximumRingSize,omitempty"`
+
+	// UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing.
+	// Defaults to false.
+	// +optional
+	UseHostnameForHashing *bool `json:"useHostnameForHashing,omitempty"`
 }
 
-type (
-	LoadBalancerMaglevConfig struct{}
-	LoadBalancerRandomConfig struct{}
-)
+type LoadBalancerMaglevConfig struct {
+	// UseHostnameForHashing specifies whether to use the hostname instead of the resolved IP address for hashing.
+	// Defaults to false.
+	// +optional
+	UseHostnameForHashing *bool `json:"useHostnameForHashing,omitempty"`
+}
 
+type LoadBalancerRandomConfig struct{}
 type SlowStart struct {
 	// Represents the size of slow start window.
 	// If set, the newly created host remains in slow start mode starting from its creation time
