@@ -83,6 +83,60 @@ spec:
 			wantErrors: []string{"at most one of the fields in [http1ProtocolOptions http2ProtocolOptions] may be set"},
 		},
 		{
+			name: "BackendConfigPolicy: HTTP2 protocol options with integer values",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-http2-integers
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  http2ProtocolOptions:
+    initialConnectionWindowSize: 65535
+    initialStreamWindowSize: 2147483647
+    maxConcurrentStreams: 100
+`,
+		},
+		{
+			name: "BackendConfigPolicy: HTTP2 protocol options with string values",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-http2-strings
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  http2ProtocolOptions:
+    initialConnectionWindowSize: "65535"
+    initialStreamWindowSize: "2147483647"
+    maxConcurrentStreams: 100
+`,
+		},
+		{
+			name: "BackendConfigPolicy: HTTP2 protocol options with invalid integer values",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: BackendConfigPolicy
+metadata:
+  name: backend-config-http2-invalid-integers
+spec:
+  targetRefs:
+  - group: ""
+    kind: Service
+    name: test-service
+  http2ProtocolOptions:
+    initialConnectionWindowSize: 1000
+    initialStreamWindowSize: 2147483648
+`,
+			wantErrors: []string{"InitialConnectionWindowSize must be between 65535 and 2147483647 bytes (inclusive)"},
+		},
+		{
 			name: "BackendConfigPolicy: valid target references",
 			input: `---
 apiVersion: gateway.kgateway.dev/v1alpha1
