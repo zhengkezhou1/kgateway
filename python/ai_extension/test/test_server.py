@@ -545,7 +545,7 @@ class TestInstrumentation:
 
         handler.req_webhook = prompt_guard.Webhook.from_json(
             {
-                "host": {"host": "example.com", "port": 443},
+                "endpoint": {"host": "example.com", "port": 443},
                 "forwardHeaders": [
                     {
                         "type": "Exact",
@@ -584,7 +584,7 @@ class TestInstrumentation:
             "Webhook span attributes should not be None"
         )
         assert (
-            webhook_attributes.get("ai.webhook.host") == handler.req_webhook.host.host
+            webhook_attributes.get("ai.webhook.host") == handler.req_webhook.endpoint.host
         )
         assert webhook_attributes.get("ai.webhook.forward_headers") == str(
             handler.req_webhook.forwardHeaders
@@ -921,7 +921,7 @@ class TestInstrumentation:
         # Configure response webhook
         handler.resp_webhook = prompt_guard.Webhook.from_json(
             {
-                "host": {"host": "example.com", "port": 443},
+                "endpoint": {"host": "example.com", "port": 443},
                 "forwardHeaders": [
                     {
                         "type": "Exact",
@@ -958,7 +958,7 @@ class TestInstrumentation:
 
         # Verify webhook span attributes
         attributes = webhook_span.attributes
-        assert attributes.get("ai.webhook.host") == handler.resp_webhook.host.host
+        assert attributes.get("ai.webhook.host") == handler.resp_webhook.endpoint.host
         assert attributes.get("ai.webhook.forward_headers") == str(
             handler.resp_webhook.forwardHeaders
         )
