@@ -371,7 +371,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
             context=trace.set_span_in_context(parent_span),
             kind=trace.SpanKind.CLIENT,
             attributes={
-                "ai.webhook.host": webhook_cfg.host.host,
+                "ai.webhook.host": webhook_cfg.endpoint.host,
                 "ai.webhook.forward_headers": str(webhook_cfg.forwardHeaders),
             },
         ) as webhook_span:
@@ -381,8 +381,8 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                 response: (
                     PromptMessages | RejectAction | None
                 ) = await make_request_webhook_request(
-                    webhook_host=webhook_cfg.host.host,
-                    webhook_port=webhook_cfg.host.port,
+                    webhook_host=webhook_cfg.endpoint.host,
+                    webhook_port=webhook_cfg.endpoint.port,
                     headers=headers,
                     promptMessages=handler.provider.construct_request_webhook_request_body(
                         body
@@ -722,7 +722,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                                 webhook = handler.resp_webhook
                                 webhook_span.set_attributes(
                                     {
-                                        "ai.webhook.host": webhook.host.host,
+                                        "ai.webhook.host": webhook.endpoint.host,
                                         "ai.webhook.forward_headers": str(
                                             webhook.forwardHeaders
                                         ),
@@ -732,8 +732,8 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                                     response: (
                                         ResponseChoices | None
                                     ) = await make_response_webhook_request(
-                                        webhook_host=handler.resp_webhook.host.host,
-                                        webhook_port=handler.resp_webhook.host.port,
+                                        webhook_host=handler.resp_webhook.endpoint.host,
+                                        webhook_port=handler.resp_webhook.endpoint.port,
                                         headers=handler.resp.headers,
                                         rc=handler.provider.construct_response_webhook_request_body(
                                             body=jsn
