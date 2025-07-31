@@ -859,7 +859,7 @@ async def serve() -> None:
 
     stats_config = StatsConfig.from_file(file_path="/var/run/ai-otel-config/stats.json")
     tracing_config = TracingConfig.from_file(
-        file_path="/run/ai-otel-config/tracing.json"
+        file_path="/var/run/ai-otel-config/tracing.json"
     )
 
     address = server_listen_addr
