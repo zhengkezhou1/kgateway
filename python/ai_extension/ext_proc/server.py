@@ -148,8 +148,9 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
             async for request in request_iterator:
                 one_of = request.WhichOneof("request")
                 handler.logger.info("one_of: %s", one_of)
+                tracer = OtelTracer().get()
                 if one_of == "request_headers":
-                    with OtelTracer.get().start_as_current_span(
+                    with tracer.start_as_current_span(
                         "handle_request_headers",
                         context=ctx,
                     ) as header_span:
@@ -159,7 +160,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                         handler.build_extra_labels(
                             self._stats_config, request.metadata_context
                         )
-                        with OtelTracer.get().start_as_current_span(
+                        with tracer.start_as_current_span(
                             "parse_config",
                             context=trace.set_span_in_context(header_span),
                         ):
@@ -180,7 +181,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                                 request_headers=external_processor_pb2.HeadersResponse()
                             )
                 elif one_of == "request_body":
-                    with OtelTracer.get().start_as_current_span(
+                    with tracer.start_as_current_span(
                         "handle_request_body",
                         context=ctx,
                     ) as parent_span:
@@ -208,7 +209,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                         request_trailers=external_processor_pb2.TrailersResponse()
                     )
                 elif one_of == "response_headers":
-                    with OtelTracer.get().start_as_current_span(
+                    with tracer.start_as_current_span(
                         "handle_response_headers",
                         context=ctx,
                     ) as parent_span:
@@ -238,7 +239,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                             response_headers=external_processor_pb2.HeadersResponse()
                         )
                 elif one_of == "response_body":
-                    with OtelTracer.get().start_as_current_span(
+                    with tracer.start_as_current_span(
                         "handle_response_body",
                         context=ctx,
                     ) as parent_span:
@@ -481,7 +482,8 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
             body = body_jsn
             operation_name = handler.req.path
 
-            with OtelTracer.get().start_as_current_span(
+            tracer = OtelTracer.get()
+            with tracer.start_as_current_span(
                 f"gen_ai.request {operation_name} {handler.request_model}",
                 context=trace.set_span_in_context(parent_span),
                 attributes={
@@ -530,7 +532,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                     return req_regex_resp
 
                 if handler.req_moderation:
-                    with OtelTracer.get().start_as_current_span(
+                    with tracer.start_as_current_span(
                         "gen_ai.request.moderation",
                         context=trace.set_span_in_context(gen_ai_client_span),
                     ) as moderation_span:
@@ -641,7 +643,8 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                 #             we still store them for caching
                 return extproc_clear_response_body()
             else:
-                with OtelTracer.get().start_as_current_span(
+                tracer = OtelTracer.get()
+                with tracer.start_as_current_span(
                     f"gen_ai.non_streaming_response {handler.req.path}",
                     context=trace.set_span_in_context(parent_span),
                 ) as non_streaming_span:
@@ -715,7 +718,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                         handler.set_response_model(handler.provider.get_model_resp(jsn))
 
                         if handler.resp_webhook and not has_function_call_resp:
-                            with OtelTracer.get().start_as_current_span(
+                            with tracer.start_as_current_span(
                                 "gen_ai.response.webhook",
                                 context=trace.set_span_in_context(non_streaming_span),
                             ) as webhook_span:
@@ -766,7 +769,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
 
                         # Only run regex if the response has no tools
                         if handler.resp_regex and not has_function_call_resp:
-                            with OtelTracer.get().start_as_current_span(
+                            with tracer.start_as_current_span(
                                 "gen_ai.response.regex",
                                 context=trace.set_span_in_context(non_streaming_span),
                             ):
