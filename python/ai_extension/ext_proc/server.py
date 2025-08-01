@@ -19,12 +19,12 @@ import grpc
 import gzip
 
 from telemetry.stats import Config as StatsConfig
+import telemetry.attributes as ai_attributes
 from telemetry.tracing import Config as TracingConfig, OtelTracer
 from .stream import Handler as StreamHandler
 from guardrails.regex import RegexRejection
 
 from openai import AsyncOpenAI as OpenAIClient
-from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from google.protobuf import struct_pb2 as struct_pb2
 from prometheus_client import Counter, Histogram, start_http_server
 
@@ -60,6 +60,7 @@ from presidio_analyzer import EntityRecognizer
 
 # OpenTelemetry imports
 from opentelemetry import trace
+from opentelemetry.trace.propagation.tracecontext import TraceContextTextMapPropagator
 from opentelemetry.semconv._incubating.attributes import gen_ai_attributes
 from opentelemetry.context import attach, detach
 from opentelemetry.propagate import extract
@@ -372,8 +373,10 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
             context=trace.set_span_in_context(parent_span),
             kind=trace.SpanKind.CLIENT,
             attributes={
-                "ai.webhook.host": webhook_cfg.endpoint.host,
-                "ai.webhook.forward_headers": str(webhook_cfg.forwardHeaders),
+                ai_attributes.AI_WEBHOOK_HOST: webhook_cfg.endpoint.host,
+                ai_attributes.AI_WEBHOOK_FORWARD_HEADERS: str(
+                    webhook_cfg.forwardHeaders
+                ),
             },
         ) as webhook_span:
             try:
@@ -393,15 +396,15 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                 if isinstance(response, PromptMessages):
                     webhook_span.set_attributes(
                         {
-                            "ai.webhook.result": "modified",
+                            ai_attributes.AI_WEBHOOK_RESULT: "modified",
                         }
                     )
                     handler.provider.update_request_body_from_webhook(body, response)
                 elif isinstance(response, RejectAction):
                     webhook_span.set_attributes(
                         {
-                            "ai.webhook.result": "rejected",
-                            "ai.webhook.reject_reason": response.reason,
+                            ai_attributes.AI_WEBHOOK_RESULT: "rejected",
+                            ai_attributes.AI_WEBHOOK_REJECT_REASON: response.reason,
                         }
                     )
                     return external_processor_pb2.ProcessingResponse(
@@ -419,7 +422,9 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                     )
                 else:
                     # response is None - webhook did not modify anything
-                    webhook_span.set_attribute("ai.webhook.result", "passed")
+                    webhook_span.set_attribute(
+                        ai_attributes.AI_WEBHOOK_RESULT, "passed"
+                    )
 
                 # No need to explicitly set OK status - it's the default
             except Exception as e:
@@ -436,21 +441,23 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
     def handle_request_body_req_regex(
         self, body: dict, handler: StreamHandler, parent_span: trace.Span
     ) -> external_processor_pb2.ProcessingResponse | None:
-        with OtelTracer.get().start_as_current_span(
-            "gen_ai.request.regex",
-            context=trace.set_span_in_context(parent_span),
-            attributes={
-                "ai.regex.action": handler.req_regex_action.value,  # mask or reject
-            },
-        ) as regex_span:
+        with (
+            OtelTracer.get().start_as_current_span(
+                "gen_ai.request.regex",
+                context=trace.set_span_in_context(parent_span),
+                attributes={
+                    ai_attributes.AI_REGEX_ACTION: handler.req_regex_action.value,  # mask or reject
+                },
+            ) as regex_span
+        ):
             # If this raises an exception it means that the action was reject, not mask
             try:
                 handler.provider.iterate_str_req_messages(
                     body=body, cb=handler.req_regex_transform
                 )
-                regex_span.set_attribute("ai.regex.result", "passed")
+                regex_span.set_attribute(ai_attributes.AI_REGEX_RESULT, "passed")
             except RegexRejection as e:
-                regex_span.set_attribute("ai.regex.result", "error")
+                regex_span.set_attribute(ai_attributes.AI_REGEX_RESULT, "error")
                 regex_span.record_exception(e)
                 regex_span.set_status(
                     trace.StatusCode.ERROR,
@@ -547,13 +554,15 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                         for result in results.results:
                             if result.flagged:
                                 moderation_span.set_attribute(
-                                    "ai.moderation.flagged", True
+                                    ai_attributes.AI_MODERATION_FLAGGED, True
                                 )
                                 return error_response(
                                     handler.req_custom_response,
                                     "Rejected by guardrails moderation",
                                 )
-                        moderation_span.set_attribute("ai.moderation.flagged", False)
+                        moderation_span.set_attribute(
+                            ai_attributes.AI_MODERATION_FLAGGED, False
+                        )
                 # currently we only count the prompt token for ratelimiting. So,
                 # this is only set here. If we change to count completion token as well
                 # will need to add those into rate_limited_tokens for stats purpose.
@@ -725,8 +734,8 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                                 webhook = handler.resp_webhook
                                 webhook_span.set_attributes(
                                     {
-                                        "ai.webhook.host": webhook.endpoint.host,
-                                        "ai.webhook.forward_headers": str(
+                                        ai_attributes.AI_WEBHOOK_HOST: webhook.endpoint.host,
+                                        ai_attributes.AI_WEBHOOK_FORWARD_HEADERS: str(
                                             webhook.forwardHeaders
                                         ),
                                     }
@@ -748,11 +757,11 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                                             jsn, response
                                         )
                                         webhook_span.set_attribute(
-                                            "ai.webhook.result", "masked"
+                                            ai_attributes.AI_WEBHOOK_RESULT, "masked"
                                         )
                                     else:
                                         webhook_span.set_attribute(
-                                            "ai.webhook.result", "passed"
+                                            ai_attributes.AI_WEBHOOK_RESULT, "passed"
                                         )
                                 except Exception as e:
                                     webhook_span.record_exception(e)
