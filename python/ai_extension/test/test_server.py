@@ -6,6 +6,7 @@ import pytest
 
 from guardrails.presidio import init_presidio_config
 from python.ai_extension.api.kgateway.policy.ai import prompt_guard
+import telemetry.attributes as ai_attributes
 from telemetry.stats import Config as StatsConfig
 from telemetry.tracing import Config as TracingConfig, OtelTracer
 from ext_proc.server import StreamHandler, ExtProcServer
@@ -584,12 +585,13 @@ class TestInstrumentation:
             "Webhook span attributes should not be None"
         )
         assert (
-            webhook_attributes.get("ai.webhook.host") == handler.req_webhook.endpoint.host
+            webhook_attributes.get(ai_attributes.AI_WEBHOOK_HOST)
+            == handler.req_webhook.endpoint.host
         )
-        assert webhook_attributes.get("ai.webhook.forward_headers") == str(
+        assert webhook_attributes.get(ai_attributes.AI_WEBHOOK_FORWARD_HEADERS) == str(
             handler.req_webhook.forwardHeaders
         )
-        assert webhook_attributes.get("ai.webhook.result") == expected_result
+        assert webhook_attributes.get(ai_attributes.AI_WEBHOOK_RESULT) == expected_result
 
     @pytest.mark.parametrize(
         argnames="regex_config,test_content,expected_result",
@@ -669,9 +671,9 @@ class TestInstrumentation:
         assert regex_span is not None, (
             "Expected a gen_ai.request.regex span to be created"
         )
-        assert regex_span.attributes.get("ai.regex.action") == regex_config.action.value
+        assert regex_span.attributes.get(ai_attributes.AI_REGEX_ACTION) == regex_config.action.value
 
-        assert regex_span.attributes.get("ai.regex.result") == expected_result
+        assert regex_span.attributes.get(ai_attributes.AI_REGEX_RESULT) == expected_result
 
     @pytest.mark.parametrize(
         argnames="moderation_flagged,expected_result",
@@ -764,8 +766,8 @@ class TestInstrumentation:
         )
 
         moderation_attributes = moderation_span.attributes
-        assert moderation_attributes.get("gen_ai.request.model") == model
-        assert moderation_attributes.get("ai.moderation.flagged") == moderation_flagged
+        assert moderation_attributes.get(gen_ai_attributes.GEN_AI_REQUEST_MODEL) == model
+        assert moderation_attributes.get(ai_attributes.AI_MODERATION_FLAGGED) == moderation_flagged
 
     @pytest.fixture(scope="package")
     def response_body_content(self):
@@ -958,8 +960,8 @@ class TestInstrumentation:
 
         # Verify webhook span attributes
         attributes = webhook_span.attributes
-        assert attributes.get("ai.webhook.host") == handler.resp_webhook.endpoint.host
-        assert attributes.get("ai.webhook.forward_headers") == str(
+        assert attributes.get(ai_attributes.AI_WEBHOOK_HOST) == handler.resp_webhook.endpoint.host
+        assert attributes.get(ai_attributes.AI_WEBHOOK_FORWARD_HEADERS) == str(
             handler.resp_webhook.forwardHeaders
         )
-        assert attributes.get("ai.webhook.result") == expected_result
+        assert attributes.get(ai_attributes.AI_WEBHOOK_RESULT) == expected_result
