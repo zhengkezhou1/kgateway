@@ -18,8 +18,8 @@ The `gen_ai.request` span should include the following attributes:
 
 * `gen_ai.operation_name`: The operation name, identical to `operation_name` in the Span Name.
 * `gen_ai.system`: The LLM provider (e.g., `OpenAI`, `Anthropic`, `HuggingFace`).
-* `gen_ai.output_type`: The expected output type.
-* `gen_ai.request.choice_count`: The number of desired generated results in the request.
+* `gen_ai.output.type`: The expected output type.
+* `gen_ai.request.choice.count`: The number of desired generated results in the request.
 * `gen_ai.request.model`: The name of the model used in the request.
 * `gen_ai.request.seed`: The seed value used for reproducible sampling.
 * `gen_ai.request.frequency_penalty`: The frequency penalty parameter.
