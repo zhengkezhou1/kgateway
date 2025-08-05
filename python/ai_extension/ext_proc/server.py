@@ -373,7 +373,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
             context=trace.set_span_in_context(parent_span),
             kind=trace.SpanKind.CLIENT,
             attributes={
-                ai_attributes.AI_WEBHOOK_HOST: webhook_cfg.endpoint.host,
+                ai_attributes.AI_WEBHOOK_ENDPOINT: str(webhook_cfg.endpoint),
                 ai_attributes.AI_WEBHOOK_FORWARD_HEADERS: str(
                     webhook_cfg.forwardHeaders
                 ),
@@ -734,7 +734,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                                 webhook = handler.resp_webhook
                                 webhook_span.set_attributes(
                                     {
-                                        ai_attributes.AI_WEBHOOK_HOST: webhook.endpoint.host,
+                                        ai_attributes.AI_WEBHOOK_ENDPOINT: str(webhook.endpoint),
                                         ai_attributes.AI_WEBHOOK_FORWARD_HEADERS: str(
                                             webhook.forwardHeaders
                                         ),
