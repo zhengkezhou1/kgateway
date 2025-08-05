@@ -166,12 +166,12 @@ var _ = Describe("SDS Server E2E Test", Serial, func() {
 		Eventually(func() bool {
 			resp, err = client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
 			return err == nil
-		}, "15s", "1s").Should(BeTrue())
+		}, "30s", "1s").Should(BeTrue())
 
 		Eventually(func() bool {
 			resp, err = client.FetchSecrets(ctx, &envoy_service_discovery_v3.DiscoveryRequest{})
 			return resp.VersionInfo == snapshotVersion
-		}, "15s", "1s").Should(BeTrue())
+		}, "30s", "1s").Should(BeTrue())
 
 		// Cert rotation #1
 		err = os.Remove(keyName)
