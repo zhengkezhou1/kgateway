@@ -585,8 +585,8 @@ class TestInstrumentation:
             "Webhook span attributes should not be None"
         )
         assert (
-            webhook_attributes.get(ai_attributes.AI_WEBHOOK_HOST)
-            == handler.req_webhook.endpoint.host
+            webhook_attributes.get(ai_attributes.AI_WEBHOOK_ENDPOINT)
+            == str(handler.req_webhook.endpoint)
         )
         assert webhook_attributes.get(ai_attributes.AI_WEBHOOK_FORWARD_HEADERS) == str(
             handler.req_webhook.forwardHeaders
@@ -960,7 +960,7 @@ class TestInstrumentation:
 
         # Verify webhook span attributes
         attributes = webhook_span.attributes
-        assert attributes.get(ai_attributes.AI_WEBHOOK_HOST) == handler.resp_webhook.endpoint.host
+        assert attributes.get(ai_attributes.AI_WEBHOOK_ENDPOINT) == str(handler.resp_webhook.endpoint)
         assert attributes.get(ai_attributes.AI_WEBHOOK_FORWARD_HEADERS) == str(
             handler.resp_webhook.forwardHeaders
         )

@@ -8,7 +8,7 @@ AI Gateway's PromptGuard features and webhook integrations.
 from typing import Final
 
 # Webhook-related attributes for both request and response webhooks
-AI_WEBHOOK_HOST: Final = "ai.webhook.host"
+AI_WEBHOOK_ENDPOINT: Final = "ai.webhook.endpoint"
 """The address of the invoked Webhook service, facilitating endpoint identification (e.g., 'localhost:1234')."""
 
 AI_WEBHOOK_FORWARD_HEADERS: Final = "ai.webhook.forward_headers"
