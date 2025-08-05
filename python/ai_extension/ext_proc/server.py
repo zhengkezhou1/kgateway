@@ -457,7 +457,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                 )
                 regex_span.set_attribute(ai_attributes.AI_REGEX_RESULT, "passed")
             except RegexRejection as e:
-                regex_span.set_attribute(ai_attributes.AI_REGEX_RESULT, "error")
+                regex_span.set_attribute(ai_attributes.AI_REGEX_RESULT, "rejected")
                 regex_span.record_exception(e)
                 regex_span.set_status(
                     trace.StatusCode.ERROR,
@@ -545,7 +545,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                     ) as moderation_span:
                         (client, model) = handler.req_moderation
                         moderation_span.set_attribute(
-                            gen_ai_attributes.GEN_AI_REQUEST_MODEL, model
+                            ai_attributes.AI_MODERATION_MODEL, model
                         )
                         results = await client.create(
                             input=handler.provider.all_req_content(body),
