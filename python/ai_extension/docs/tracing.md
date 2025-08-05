@@ -11,12 +11,12 @@ These attributes help us track core information about AI interactions.
 ### Standard AI Request
 
 **Span Name**: `gen_ai.request {operation_name} {request_model}`
-* `operation_name`: Represents the name of the current AI operation being executed, using the request's URL path as a substitute (e.g., `/v1/chat/completions`).
+* `operation_name`: Represents the name of the current AI operation being executed (e.g., chat; generate_content; text_completion).
 * `request_model`: Represents the specific model name used in the request (e.g., `gpt-4`).
 
 The `gen_ai.request` span should include the following attributes:
 
-* `gen_ai.operation_name`: The operation name, identical to `operation_name` in the Span Name (e.g., `/v1/chat/completions`).
+* `gen_ai.operation_name`: The operation name, identical to `operation_name` in the Span Name.
 * `gen_ai.system`: The LLM provider (e.g., `OpenAI`, `Anthropic`, `HuggingFace`).
 * `gen_ai.output_type`: The expected output type.
 * `gen_ai.request.choice_count`: The number of desired generated results in the request.
@@ -32,12 +32,9 @@ The `gen_ai.request` span should include the following attributes:
 
 ### Standard AI Response
 
-**Span Name**: `gen_ai.non_streaming_response {handler.req.path}`
-* `gen_ai.non_streaming_response`: Indicates this is a non-streaming response.
-* `handler.req.path`: Represents the name of the current AI operation, using the request's URL path as a substitute (e.g., `/v1/chat/completions`).
-  Note that we do not use the path value from response headers because the span is created before the response is parsed.
+**Span Name**: `gen_ai.response`
 
-The `gen_ai.non_streaming_response` span should include the following response-related attributes:
+The `gen_ai.response` span should include the following response-related attributes:
 
 * `gen_ai.response.id`: The unique ID of the response (e.g., `chatcmpl-8ss8yY3P30yX3WjS3N3B3A3C3`).
 * `gen_ai.response.model`: The name of the model actually used to generate the response (e.g., `gpt-4-0613`).
