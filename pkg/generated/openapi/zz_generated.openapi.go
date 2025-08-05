@@ -7392,9 +7392,9 @@ func schema_kgateway_v2_api_v1alpha1_Webhook(ref common.ReferenceCallback) commo
 				Description: "Webhook configures a webhook to forward requests or responses to for prompt guarding.",
 				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
-					"host": {
+					"endpoint": {
 						SchemaProps: spec.SchemaProps{
-							Description: "Host to send the traffic to. Note: TLS is not currently supported for webhook.",
+							Description: "Endpoint to send the traffic to. Note: TLS is not currently supported for webhook.",
 							Default:     map[string]interface{}{},
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.Host"),
 						},
@@ -7414,7 +7414,7 @@ func schema_kgateway_v2_api_v1alpha1_Webhook(ref common.ReferenceCallback) commo
 						},
 					},
 				},
-				Required: []string{"host"},
+				Required: []string{"endpoint"},
 			},
 		},
 		Dependencies: []string{
