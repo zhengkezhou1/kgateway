@@ -766,7 +766,7 @@ class TestInstrumentation:
         )
 
         moderation_attributes = moderation_span.attributes
-        assert moderation_attributes.get(gen_ai_attributes.GEN_AI_REQUEST_MODEL) == model
+        assert moderation_attributes.get(ai_attributes.AI_MODERATION_MODEL) == model
         assert moderation_attributes.get(ai_attributes.AI_MODERATION_FLAGGED) == moderation_flagged
 
     @pytest.fixture(scope="package")

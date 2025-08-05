@@ -25,8 +25,11 @@ AI_REGEX_ACTION: Final = "ai.regex.action"
 """The user-configured prompt guard action ('mask' or 'reject'), indicating the intended behavior."""
 
 AI_REGEX_RESULT: Final = "ai.regex.result"
-"""Indicates the outcome of the regular expression guard. It's 'error' if the action is 'reject' and the content was indeed rejected; otherwise, it's 'passed'. This helps quickly identify rejected traffic."""
+"""Indicates the outcome of the regular expression guard. It's 'reject' if the action is 'reject' and the content was indeed rejected; otherwise, it's 'passed'. This helps quickly identify rejected traffic."""
 
 # Content moderation attributes
+AI_MODERATION_MODEL: Final = "ai.moderation.model"
+""" Indicates the model used for moderation (e.g., `omni-moderation-latest`), distinct from the main LLM model."""
+
 AI_MODERATION_FLAGGED: Final = "ai.moderation.flagged"
 """A boolean value indicating whether the request was rejected by the moderation guardrails due to content moderation (true or false), serving as a direct measure of moderation effectiveness."""

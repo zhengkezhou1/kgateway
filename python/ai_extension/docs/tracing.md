@@ -67,7 +67,7 @@ These attributes offer critical insights into how requests and responses are han
 **Span Attributes**
 
 * `ai.regex.action`: The user-configured prompt guard action (`mask` or `reject`), indicating the intended behavior.
-* `ai.regex.result`: Indicates the outcome of the regular expression guard. It's `error` if the action is `reject` and the Prompt was indeed rejected; otherwise, it's `pass`. This helps quickly identify rejected traffic.
+* `ai.regex.result`: Indicates the outcome of the regular expression guard. It's `reject` if the action is `reject` and the Prompt was indeed rejected; otherwise, it's `pass`. This helps quickly identify rejected traffic.
 
 ### Moderation
 
@@ -75,5 +75,5 @@ These attributes offer critical insights into how requests and responses are han
 
 **Span Attributes**
 
-* `gen_ai.request.model`: Indicates the model used for moderation (e.g., `omni-moderation-latest`), distinct from the main LLM model.
+* `ai.moderation.model`: Indicates the model used for moderation (e.g., `omni-moderation-latest`), distinct from the main LLM model.
 * `ai.moderation.flagged`: A boolean value indicating whether the request was rejected by the moderation guardrails due to content moderation (`true` or `false`), serving as a direct measure of moderation effectiveness.
