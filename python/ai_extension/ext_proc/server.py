@@ -339,7 +339,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
             handler.req_webhook.forwardHeaders if handler.req_webhook else [],
             headers,
         )
-        handler.req.headers = get_http_header(headers.headers, ":path")
+        handler.req.path = get_http_header(headers.headers, ":path")
         auth_header = get_http_header(headers.headers, "authorization").removeprefix(
             "Bearer "
         )
