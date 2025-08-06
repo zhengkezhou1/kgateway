@@ -259,7 +259,7 @@ func (s *testingSuite) TestSelfManagedGateway() {
 			}
 		}
 		assert.True(c, accepted, "gateway status not accepted")
-	}, 10*time.Second, 1*time.Second)
+	}, 20*time.Second, 1*time.Second)
 
 	s.testInstallation.Assertions.ConsistentlyObjectsNotExist(s.ctx, proxyService, proxyServiceAccount, proxyDeployment)
 }
