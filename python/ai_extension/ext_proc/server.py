@@ -594,6 +594,74 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
         # If it's not end of stream, clear the body so envoy doesn't forward to upstream.
         return extproc_clear_request_body()
 
+    async def handle_response_body_resp_webhook(
+            self,
+            body: dict,
+            handler: StreamHandler,
+            parent_span: trace.Span,
+    ) -> external_processor_pb2.ProcessingResponse | None:
+        with OtelTracer.get().start_as_current_span(
+                "handle_response_body_resp_webhook",
+                context=trace.set_span_in_context(parent_span),
+        ) as webhook_span:
+            webhook = handler.resp_webhook
+            webhook_span.set_attributes(
+                {
+                    ai_attributes.AI_WEBHOOK_ENDPOINT: str(webhook.endpoint),
+                    ai_attributes.AI_WEBHOOK_FORWARD_HEADERS: str(
+                        webhook.forwardHeaders
+                    ),
+                }
+            )
+            try:
+                response: (
+                        ResponseChoices | None
+                ) = await make_response_webhook_request(
+                    webhook_host=handler.resp_webhook.endpoint.host,
+                    webhook_port=handler.resp_webhook.endpoint.port,
+                    headers=handler.resp.headers,
+                    rc=handler.provider.construct_response_webhook_request_body(
+                        body=body
+                    ),
+                )
+
+                if response is not None:
+                    handler.provider.update_response_body_from_webhook(
+                        body, response
+                    )
+                    webhook_span.set_attribute(
+                        ai_attributes.AI_WEBHOOK_RESULT, "masked"
+                    )
+                else:
+                    webhook_span.set_attribute(
+                        ai_attributes.AI_WEBHOOK_RESULT, "passed"
+                    )
+            except Exception as e:
+                webhook_span.record_exception(e)
+                webhook_span.set_status(trace.StatusCode.ERROR)
+                # This indicate the response webhook call failed (not from RejectAction)
+                # and we might have already sent out the response status code already to
+                # the end user. Returning an error here will cause Envoy to close the client
+                # connection immediately.
+                return error_response(
+                    prompt_guard.CustomResponse(status_code=500),
+                    "Error with guardrails webhook",
+                    e,
+                )
+
+    async def handle_response_body_resp_regex(
+            self,
+            body: dict,
+            handler: StreamHandler,
+            parent_span: trace.Span) -> None:
+        with OtelTracer.get().start_as_current_span(
+                "handle_response_body_resp_regex",
+                context=trace.set_span_in_context(parent_span),
+        ):
+            handler.provider.iterate_str_resp_messages(
+                body=body, cb=handler.resp_regex_transform
+            )
+
     async def handle_response_body(
         self,
         resp_body: external_processor_pb2.HttpBody,
@@ -727,64 +795,12 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                         handler.set_response_model(handler.provider.get_model_resp(jsn))
 
                         if handler.resp_webhook and not has_function_call_resp:
-                            with tracer.start_as_current_span(
-                                "handle_response_body_resp_webhook",
-                                context=trace.set_span_in_context(non_streaming_span),
-                            ) as webhook_span:
-                                webhook = handler.resp_webhook
-                                webhook_span.set_attributes(
-                                    {
-                                        ai_attributes.AI_WEBHOOK_ENDPOINT: str(webhook.endpoint),
-                                        ai_attributes.AI_WEBHOOK_FORWARD_HEADERS: str(
-                                            webhook.forwardHeaders
-                                        ),
-                                    }
-                                )
-                                try:
-                                    response: (
-                                        ResponseChoices | None
-                                    ) = await make_response_webhook_request(
-                                        webhook_host=handler.resp_webhook.endpoint.host,
-                                        webhook_port=handler.resp_webhook.endpoint.port,
-                                        headers=handler.resp.headers,
-                                        rc=handler.provider.construct_response_webhook_request_body(
-                                            body=jsn
-                                        ),
-                                    )
-
-                                    if response is not None:
-                                        handler.provider.update_response_body_from_webhook(
-                                            jsn, response
-                                        )
-                                        webhook_span.set_attribute(
-                                            ai_attributes.AI_WEBHOOK_RESULT, "masked"
-                                        )
-                                    else:
-                                        webhook_span.set_attribute(
-                                            ai_attributes.AI_WEBHOOK_RESULT, "passed"
-                                        )
-                                except Exception as e:
-                                    webhook_span.record_exception(e)
-                                    webhook_span.set_status(trace.StatusCode.ERROR)
-                                    # This indicate the response webhook call failed (not from RejectAction)
-                                    # and we might have already sent out the response status code already to
-                                    # the end user. Returning an error here will cause Envoy to close the client
-                                    # connection immediately.
-                                    return error_response(
-                                        prompt_guard.CustomResponse(status_code=500),
-                                        "Error with guardrails webhook",
-                                        e,
-                                    )
-
+                            if error_response := await self.handle_response_body_resp_webhook(jsn, handler, non_streaming_span):
+                                return error_response
+                            
                         # Only run regex if the response has no tools
                         if handler.resp_regex and not has_function_call_resp:
-                            with tracer.start_as_current_span(
-                                "handle_response_body_resp_regex",
-                                context=trace.set_span_in_context(non_streaming_span),
-                            ):
-                                handler.provider.iterate_str_resp_messages(
-                                    body=jsn, cb=handler.resp_regex_transform
-                                )
+                            await self.handle_response_body_resp_regex(jsn, handler, non_streaming_span)
 
                         return external_processor_pb2.ProcessingResponse(
                             response_body=external_processor_pb2.BodyResponse(
