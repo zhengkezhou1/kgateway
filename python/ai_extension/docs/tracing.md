@@ -56,7 +56,6 @@ These attributes offer critical insights into how requests and responses are han
 **Span Attributes**
 
 * `ai.webhook.endpoint`: The address of the invoked Webhook service, facilitating endpoint identification (e.g., `localhost:1234`).
-* `ai.webhook.forward_headers`: Specifies which HTTP request headers were forwarded to the Webhook, useful for debugging and security auditing (e.g., `X-Request-ID`).
 * `ai.webhook.result`: The decision made by the Webhook based on the Prompt content (`modified`, `rejected`, or `passed`). This is a core attribute for understanding key decision points in the request flow.
 * `ai.webhook.reject_reason`: If the request was rejected, this attribute provides the specific reason for rejection, which is crucial for problem diagnosis.
 

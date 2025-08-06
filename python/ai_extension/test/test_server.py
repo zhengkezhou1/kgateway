@@ -588,9 +588,6 @@ class TestInstrumentation:
             webhook_attributes.get(ai_attributes.AI_WEBHOOK_ENDPOINT)
             == str(handler.req_webhook.endpoint)
         )
-        assert webhook_attributes.get(ai_attributes.AI_WEBHOOK_FORWARD_HEADERS) == str(
-            handler.req_webhook.forwardHeaders
-        )
         assert webhook_attributes.get(ai_attributes.AI_WEBHOOK_RESULT) == expected_result
 
     @pytest.mark.parametrize(
@@ -961,7 +958,4 @@ class TestInstrumentation:
         # Verify webhook span attributes
         attributes = webhook_span.attributes
         assert attributes.get(ai_attributes.AI_WEBHOOK_ENDPOINT) == str(handler.resp_webhook.endpoint)
-        assert attributes.get(ai_attributes.AI_WEBHOOK_FORWARD_HEADERS) == str(
-            handler.resp_webhook.forwardHeaders
-        )
         assert attributes.get(ai_attributes.AI_WEBHOOK_RESULT) == expected_result
