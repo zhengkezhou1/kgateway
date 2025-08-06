@@ -11,9 +11,6 @@ from typing import Final
 AI_WEBHOOK_ENDPOINT: Final = "ai.webhook.endpoint"
 """The address of the invoked Webhook service, facilitating endpoint identification (e.g., 'localhost:1234')."""
 
-AI_WEBHOOK_FORWARD_HEADERS: Final = "ai.webhook.forward_headers"
-"""Specifies which HTTP request headers were forwarded to the Webhook, useful for debugging and security auditing (e.g., 'X-Request-ID')."""
-
 AI_WEBHOOK_RESULT: Final = "ai.webhook.result"
 """The decision made by the Webhook based on the content ('modified', 'rejected', or 'passed'). This is a core attribute for understanding key decision points in the request flow."""
 
