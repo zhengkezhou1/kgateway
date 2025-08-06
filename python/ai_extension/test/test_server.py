@@ -574,10 +574,10 @@ class TestInstrumentation:
         assert len(spans) >= 1, "Expected at least one span to be created"
 
         webhook_span = next(
-            (s for s in spans if s.name.startswith("gen_ai.request.webhook")), None
+            (s for s in spans if s.name.startswith("handle_request_body_req_webhook")), None
         )
         assert webhook_span is not None, (
-            "Expected a gen_ai.request.webhook span to be created"
+            "Expected a handle_request_body_req_webhook span to be created"
         )
 
         webhook_attributes = webhook_span.attributes
@@ -666,10 +666,10 @@ class TestInstrumentation:
         assert len(spans) >= 1, "Expected at least one span to be created"
 
         regex_span = next(
-            (s for s in spans if s.name.startswith("gen_ai.request.regex")), None
+            (s for s in spans if s.name.startswith("handle_request_body_req_regex")), None
         )
         assert regex_span is not None, (
-            "Expected a gen_ai.request.regex span to be created"
+            "Expected a handle_request_body_req_regex span to be created"
         )
         assert regex_span.attributes.get(ai_attributes.AI_REGEX_ACTION) == regex_config.action.value
 
@@ -759,10 +759,10 @@ class TestInstrumentation:
         assert len(spans) >= 1, "Expected at least one span to be created"
 
         moderation_span = next(
-            (s for s in spans if s.name.startswith("gen_ai.request.moderation")), None
+            (s for s in spans if s.name.startswith("handle_request_body_req_moderation")), None
         )
         assert moderation_span is not None, (
-            "Expected a gen_ai.request.moderation span to be created"
+            "Expected a handle_request_body_req_moderation span to be created"
         )
 
         moderation_attributes = moderation_span.attributes
@@ -833,17 +833,17 @@ class TestInstrumentation:
 
         assert len(spans) >= 1, "Expected at least one span to be created"
 
-        gen_ai_non_streaming_response = next(
-            (s for s in spans if s.name.startswith("gen_ai.non_streaming_response")),
+        gen_ai_response = next(
+            (s for s in spans if s.name.startswith("gen_ai.response")),
             None,
         )
 
-        assert gen_ai_non_streaming_response is not None, (
-            "Expected a gen_ai_non_streaming_response span to be created"
+        assert gen_ai_response is not None, (
+            "Expected a gen_ai.response span to be created"
         )
 
         # Verify response span attributes
-        attributes = gen_ai_non_streaming_response.attributes
+        attributes = gen_ai_response.attributes
 
         assert (
             attributes.get(gen_ai_attributes.GEN_AI_OPERATION_NAME) == handler.req.path
@@ -950,12 +950,12 @@ class TestInstrumentation:
         assert len(spans) >= 1, "Expected at least one span to be created"
 
         webhook_span = next(
-            (s for s in spans if s.name.startswith("gen_ai.response.webhook")),
+            (s for s in spans if s.name.startswith("handle_response_body_resp_webhook")),
             None,
         )
 
         assert webhook_span is not None, (
-            "Expected a gen_ai.response.webhook span to be created"
+            "Expected a handle_response_body_resp_webhook span to be created"
         )
 
         # Verify webhook span attributes
