@@ -51,7 +51,7 @@ These attributes offer critical insights into how requests and responses are han
 
 ### Webhook
 
-**Span Name**: `gen_ai.request.webhook` or `gen_ai.response.webhook`
+**Span Name**: `handle_request_body_req_webhook` or `handle_response_body_resp_webhook`
 
 **Span Attributes**
 
@@ -62,7 +62,7 @@ These attributes offer critical insights into how requests and responses are han
 
 ### Regex
 
-**Span Name**: `gen_ai.request.regex` or `gen_ai.response.regex`
+**Span Name**: `handle_request_body_req_regex` or `handle_response_body_resp_regex`
 
 **Span Attributes**
 
@@ -71,7 +71,7 @@ These attributes offer critical insights into how requests and responses are han
 
 ### Moderation
 
-**Span Name**: `gen_ai.request.moderation`
+**Span Name**: `handle_request_body_req_moderation` or `handle_response_body_resp_moderation`
 
 **Span Attributes**
 

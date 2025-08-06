@@ -369,7 +369,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
         parent_span: trace.Span,
     ) -> external_processor_pb2.ProcessingResponse | None:
         with OtelTracer.get().start_as_current_span(
-            "gen_ai.request.webhook",
+            "handle_request_body_req_webhook",
             context=trace.set_span_in_context(parent_span),
             kind=trace.SpanKind.CLIENT,
             attributes={
@@ -443,7 +443,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
     ) -> external_processor_pb2.ProcessingResponse | None:
         with (
             OtelTracer.get().start_as_current_span(
-                "gen_ai.request.regex",
+                "handle_request_body_req_regex",
                 context=trace.set_span_in_context(parent_span),
                 attributes={
                     ai_attributes.AI_REGEX_ACTION: handler.req_regex_action.value,  # mask or reject
@@ -540,7 +540,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
 
                 if handler.req_moderation:
                     with tracer.start_as_current_span(
-                        "gen_ai.request.moderation",
+                        "handle_request_body_req_moderation",
                         context=trace.set_span_in_context(gen_ai_client_span),
                     ) as moderation_span:
                         (client, model) = handler.req_moderation
@@ -654,7 +654,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
             else:
                 tracer = OtelTracer.get()
                 with tracer.start_as_current_span(
-                    f"gen_ai.non_streaming_response {handler.req.path}",
+                    "gen_ai.response",
                     context=trace.set_span_in_context(parent_span),
                 ) as non_streaming_span:
                     full_body = b""
@@ -728,7 +728,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
 
                         if handler.resp_webhook and not has_function_call_resp:
                             with tracer.start_as_current_span(
-                                "gen_ai.response.webhook",
+                                "handle_response_body_resp_webhook",
                                 context=trace.set_span_in_context(non_streaming_span),
                             ) as webhook_span:
                                 webhook = handler.resp_webhook
@@ -779,7 +779,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                         # Only run regex if the response has no tools
                         if handler.resp_regex and not has_function_call_resp:
                             with tracer.start_as_current_span(
-                                "gen_ai.response.regex",
+                                "handle_response_body_resp_regex",
                                 context=trace.set_span_in_context(non_streaming_span),
                             ):
                                 handler.provider.iterate_str_resp_messages(
