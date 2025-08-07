@@ -4275,8 +4275,8 @@ func (in *TLS) DeepCopyInto(out *TLS) {
 		*out = new(bool)
 		**out = **in
 	}
-	if in.OneWayTLS != nil {
-		in, out := &in.OneWayTLS, &out.OneWayTLS
+	if in.SimpleTLS != nil {
+		in, out := &in.SimpleTLS, &out.SimpleTLS
 		*out = new(bool)
 		**out = **in
 	}
