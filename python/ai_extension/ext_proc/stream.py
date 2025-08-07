@@ -266,3 +266,21 @@ class Handler:
             self.resp_regex,
             self.anon,
         )
+
+    def get_operation_name(self) -> str:
+        """
+        Infers and returns the corresponding operation name based on the request path.
+
+        This function maps a complex API path to a short, normalized operation name,
+        which is required by the specification to be a "single word."
+
+        Returns:
+            A string representing the operation name, such as "chat" or "text_completion".
+            Returns "generate_content" if no known operation keyword is found in the path.
+        """
+        path = self.req.path
+        if "chat/completion" in path:
+            return "chat"
+        if "completions" in path:
+            return "text_completion"
+        return "generate_content"

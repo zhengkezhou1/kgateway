@@ -484,7 +484,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
             )
 
             body = body_jsn
-            operation_name = handler.req.path
+            operation_name = handler.get_operation_name()
 
             tracer = OtelTracer.get()
             with tracer.start_as_current_span(
@@ -766,7 +766,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                             if isinstance(first_choice, dict):
                                 finish_reason = first_choice.get("finish_reason", "")
 
-                        operation_name = handler.req.path
+                        operation_name = handler.get_operation_name()
                         model_name = handler.get_response_model()
 
                         # Set all response attributes directly on the no_streaming_span
