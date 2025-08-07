@@ -492,7 +492,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                 context=trace.set_span_in_context(parent_span),
                 attributes={
                     gen_ai_attributes.GEN_AI_OPERATION_NAME: operation_name,
-                    gen_ai_attributes.GEN_AI_SYSTEM: handler.llm_provider,
+                    gen_ai_attributes.GEN_AI_SYSTEM: handler.get_ai_system(),
                     gen_ai_attributes.GEN_AI_OUTPUT_TYPE: body.get(
                         "response_format", {}
                     ).get("type", ""),
@@ -773,7 +773,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                         non_streaming_span.set_attributes(
                             {
                                 gen_ai_attributes.GEN_AI_OPERATION_NAME: operation_name,
-                                gen_ai_attributes.GEN_AI_SYSTEM: handler.llm_provider,
+                                gen_ai_attributes.GEN_AI_SYSTEM: handler.get_ai_system(),
                                 gen_ai_attributes.GEN_AI_RESPONSE_ID: jsn.get("id", ""),
                                 gen_ai_attributes.GEN_AI_RESPONSE_MODEL: model_name,
                                 gen_ai_attributes.GEN_AI_RESPONSE_FINISH_REASONS: finish_reason,
