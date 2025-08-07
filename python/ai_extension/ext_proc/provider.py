@@ -9,6 +9,9 @@ from dataclasses import dataclass
 from guardrails import api as webhook_api
 from abc import ABC, abstractmethod
 from util.http import get_content_type
+from opentelemetry.util.types import Attributes
+from opentelemetry.semconv._incubating.attributes import gen_ai_attributes
+
 from ext_proc.streamchunkdata import StreamChunkData, StreamChunkDataType
 
 logger = logging.getLogger().getChild("kgateway-ai-ext.provider")
@@ -102,6 +105,13 @@ class Provider(ABC):
     The provider is responsible for interfacing with the different request and
     response formats of the different AI providers.
     """
+    @abstractmethod
+    def get_attributes_for_request_body(self, jsn: dict) -> Attributes:
+        pass
+
+    @abstractmethod
+    def get_attributes_for_response_body(self, jsn: dict) -> Attributes:
+        pass
 
     @abstractmethod
     def tokens(self, jsn: dict) -> Tokens:
@@ -312,6 +322,54 @@ def content_from_dict(content: dict) -> str:
 
 
 class OpenAI(Provider):
+    def get_attributes_for_request_body(self, body: dict) -> Attributes:
+
+        return {
+            gen_ai_attributes.GEN_AI_OUTPUT_TYPE: body.get(
+                "response_format", {}
+            ).get("type", ""),
+            gen_ai_attributes.GEN_AI_REQUEST_CHOICE_COUNT: body.get("n", 0),
+            gen_ai_attributes.GEN_AI_REQUEST_MODEL: body.get("model", None),
+            gen_ai_attributes.GEN_AI_REQUEST_SEED: body.get("seed", 0),
+            gen_ai_attributes.GEN_AI_REQUEST_FREQUENCY_PENALTY: body.get(
+                "frequency_penalty", 0
+            ),
+            gen_ai_attributes.GEN_AI_REQUEST_MAX_TOKENS: body.get(
+                "max_tokens", 0
+            ),
+            gen_ai_attributes.GEN_AI_REQUEST_PRESENCE_PENALTY: body.get(
+                "presence_penalty", 0
+            ),
+            gen_ai_attributes.GEN_AI_REQUEST_STOP_SEQUENCES: body.get(
+                "stop", []
+            ),
+            gen_ai_attributes.GEN_AI_REQUEST_TEMPERATURE: body.get(
+                "temperature", 0
+            ),
+            gen_ai_attributes.GEN_AI_REQUEST_TOP_K: body.get("top_k", 0),
+            gen_ai_attributes.GEN_AI_REQUEST_TOP_P: body.get("top_p", 0),
+        }
+
+
+    def get_attributes_for_response_body(self, body: dict) -> Attributes:
+        finish_reason = ""
+
+        if (
+            isinstance(body.get("choices"), list)
+            and len(body["choices"]) > 0
+        ):
+            first_choice = body["choices"][0]
+            if isinstance(first_choice, dict):
+                finish_reason = first_choice.get("finish_reason", "")
+
+        return {
+            gen_ai_attributes.GEN_AI_RESPONSE_ID: body.get("id", ""),
+            gen_ai_attributes.GEN_AI_RESPONSE_MODEL: self.get_model_resp(body),
+            gen_ai_attributes.GEN_AI_RESPONSE_FINISH_REASONS: finish_reason,
+            gen_ai_attributes.GEN_AI_USAGE_INPUT_TOKENS: self.tokens(body).prompt,
+            gen_ai_attributes.GEN_AI_USAGE_OUTPUT_TOKENS: self.tokens(body).completion,
+        }
+
     def tokens(self, jsn: dict) -> Tokens:
         if "usage" not in jsn:
             # streaming chunk by default does not contain usage
@@ -699,6 +757,14 @@ class OpenAI(Provider):
 
 
 class Anthropic(OpenAI):
+    def get_attributes_for_request_body(self, jsn: dict) -> Attributes:
+        #TODO(zhengke) implement me
+        return {}
+
+    def get_attributes_for_response_body(self, jsn: dict) -> Attributes:
+        #TODO(zhengke) implement me
+        return {}
+
     def tokens(self, jsn: dict) -> Tokens:
         if "usage" not in jsn:
             return Tokens()
@@ -867,6 +933,14 @@ class Anthropic(OpenAI):
 
 
 class Gemini(Provider):
+    def get_attributes_for_request_body(self, jsn: dict) -> Attributes:
+        #TODO(zhengke) implement me
+        return {}
+
+    def get_attributes_for_response_body(self, jsn: dict) -> Attributes:
+        #TODO(zhengke) implement me
+        return {}
+    
     def get_tokens_details_from_json(self, details_json: List[Any]) -> TokensDetails:
         tokens_details = TokensDetails()
         for detail in details_json:

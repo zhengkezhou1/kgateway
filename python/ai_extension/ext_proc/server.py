@@ -490,34 +490,15 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
             with tracer.start_as_current_span(
                 f"gen_ai.request {operation_name} {handler.request_model}",
                 context=trace.set_span_in_context(parent_span),
-                attributes={
-                    gen_ai_attributes.GEN_AI_OPERATION_NAME: operation_name,
-                    gen_ai_attributes.GEN_AI_SYSTEM: handler.get_ai_system(),
-                    gen_ai_attributes.GEN_AI_OUTPUT_TYPE: body.get(
-                        "response_format", {}
-                    ).get("type", ""),
-                    gen_ai_attributes.GEN_AI_REQUEST_CHOICE_COUNT: body.get("n", 0),
-                    gen_ai_attributes.GEN_AI_REQUEST_MODEL: handler.request_model,
-                    gen_ai_attributes.GEN_AI_REQUEST_SEED: body.get("seed", 0),
-                    gen_ai_attributes.GEN_AI_REQUEST_FREQUENCY_PENALTY: body.get(
-                        "frequency_penalty", 0
-                    ),
-                    gen_ai_attributes.GEN_AI_REQUEST_MAX_TOKENS: body.get(
-                        "max_tokens", 0
-                    ),
-                    gen_ai_attributes.GEN_AI_REQUEST_PRESENCE_PENALTY: body.get(
-                        "presence_penalty", 0
-                    ),
-                    gen_ai_attributes.GEN_AI_REQUEST_STOP_SEQUENCES: body.get(
-                        "stop", []
-                    ),
-                    gen_ai_attributes.GEN_AI_REQUEST_TEMPERATURE: body.get(
-                        "temperature", 0
-                    ),
-                    gen_ai_attributes.GEN_AI_REQUEST_TOP_K: body.get("top_k", 0),
-                    gen_ai_attributes.GEN_AI_REQUEST_TOP_P: body.get("top_p", 0),
-                },
+                attributes=handler.provider.get_attributes_for_request_body(body),
             ) as gen_ai_client_span:
+                # follow two attributes don't contain in request body directly.
+                gen_ai_client_span.set_attributes(
+                    {
+                        gen_ai_attributes.GEN_AI_OPERATION_NAME: operation_name,
+                        gen_ai_attributes.GEN_AI_SYSTEM: handler.get_ai_system(),
+                    }
+                )
                 gen_ai_client_span.set_status(trace.StatusCode.OK)
                 tokens = handler.provider.get_num_tokens_from_body(body)
 
@@ -753,34 +734,19 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                                 body=full_body,
                             )
                     else:
-                        handler.increment_tokens(jsn)
-                        handler.set_response_model(handler.provider.get_model_resp(jsn))
-
-                        finish_reason = ""
-
-                        if (
-                            isinstance(jsn.get("choices"), list)
-                            and len(jsn["choices"]) > 0
-                        ):
-                            first_choice = jsn["choices"][0]
-                            if isinstance(first_choice, dict):
-                                finish_reason = first_choice.get("finish_reason", "")
-
-                        operation_name = handler.get_operation_name()
-                        model_name = handler.get_response_model()
-
                         # Set all response attributes directly on the no_streaming_span
+                        non_streaming_span.set_attributes(handler.provider.get_attributes_for_response_body(jsn))
+
+                        # follow two attributes don't contain in response body directly.
                         non_streaming_span.set_attributes(
                             {
-                                gen_ai_attributes.GEN_AI_OPERATION_NAME: operation_name,
+                                gen_ai_attributes.GEN_AI_OPERATION_NAME: handler.get_operation_name(),
                                 gen_ai_attributes.GEN_AI_SYSTEM: handler.get_ai_system(),
-                                gen_ai_attributes.GEN_AI_RESPONSE_ID: jsn.get("id", ""),
-                                gen_ai_attributes.GEN_AI_RESPONSE_MODEL: model_name,
-                                gen_ai_attributes.GEN_AI_RESPONSE_FINISH_REASONS: finish_reason,
-                                gen_ai_attributes.GEN_AI_USAGE_INPUT_TOKENS: handler.get_tokens().prompt,
-                                gen_ai_attributes.GEN_AI_USAGE_OUTPUT_TOKENS: handler.get_tokens().completion,
                             }
                         )
+
+                        handler.increment_tokens(jsn)
+                        handler.set_response_model(handler.provider.get_model_resp(jsn))
 
                         has_function_call_resp = (
                             handler.provider.has_function_call_finish_reason(jsn)
