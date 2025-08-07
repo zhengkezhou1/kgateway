@@ -440,7 +440,7 @@ class TestInstrumentation:
         assert (
             attributes.get(gen_ai_attributes.GEN_AI_OPERATION_NAME) == "chat"
         )
-        assert attributes.get(gen_ai_attributes.GEN_AI_SYSTEM) == handler.llm_provider
+        assert attributes.get(gen_ai_attributes.GEN_AI_SYSTEM) == handler.get_ai_system()
         assert (
             attributes.get(gen_ai_attributes.GEN_AI_OUTPUT_TYPE)
             == request_body_content["response_format"]["type"]
@@ -795,7 +795,7 @@ class TestInstrumentation:
               "system_fingerprint": "fp_48196bc67a"
           }"""
 
-    def test_handle_response_body_basic(
+    def test_handle_response_body(
         self, setup_in_memory_tracer, response_body_content
     ):
         """Test basic response body handling with instrumentation."""
@@ -846,7 +846,7 @@ class TestInstrumentation:
         assert (
             attributes.get(gen_ai_attributes.GEN_AI_OPERATION_NAME) == "chat"
         )
-        assert attributes.get(gen_ai_attributes.GEN_AI_SYSTEM) == handler.llm_provider
+        assert attributes.get(gen_ai_attributes.GEN_AI_SYSTEM) == handler.get_ai_system()
         assert attributes.get(gen_ai_attributes.GEN_AI_RESPONSE_ID) == "fake"
         assert (
             attributes.get(gen_ai_attributes.GEN_AI_RESPONSE_MODEL)

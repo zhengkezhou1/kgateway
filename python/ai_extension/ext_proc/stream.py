@@ -15,6 +15,7 @@ from .provider import (
     ANTHROPIC_LLM_STR,
     GEMINI_LLM_STR,
     VERTEX_AI_LLM_STR,
+    OPENAI_LLM_STR,
 )
 
 from google.protobuf import struct_pb2 as struct_pb2
@@ -200,7 +201,7 @@ class Handler:
             handler = Handler(
                 logger=sub_logger, provider=Gemini(), llm_provider=llm_provider
             )
-        else:
+        elif llm_provider == OPENAI_LLM_STR:
             handler = Handler(
                 logger=sub_logger, provider=OpenAI(), llm_provider=llm_provider
             )
@@ -284,3 +285,26 @@ class Handler:
         if "completions" in path:
             return "text_completion"
         return "generate_content"
+
+    def get_ai_system(self) -> str:
+        """
+        Returns the corresponding AI system name based on the LLM provider's string name.
+
+        This function determines the name of the AI system by checking the value of
+        `self.llm_provider`. It's primarily used to map internal provider constants
+        to more user-friendly, readable names.
+
+        Returns:
+            A string representing the matched AI system name, such as "anthropic" or "gcp.gemini".
+            If the value of `self.llm_provider` does not match any known providers,
+            it returns an empty string.
+        """
+        if self.llm_provider == ANTHROPIC_LLM_STR:
+            return "anthropic"
+        elif self.llm_provider == GEMINI_LLM_STR:
+            return "gcp.gemini"
+        elif self.llm_provider == VERTEX_AI_LLM_STR:
+            return "gcp.vertex_ai"
+        elif self.llm_provider == OPENAI_LLM_STR:
+            return "openai"
+        return ""
