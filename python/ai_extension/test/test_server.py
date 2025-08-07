@@ -405,6 +405,7 @@ class TestInstrumentation:
         metadict = {"x-llm-provider": "openai"}
         handler = stream_handler(metadict)
         handler.req_webhook = None
+        handler.req.path = "/chat/completions"
 
         # Create a test span in the parent span
         with test_tracer.start_as_current_span("test_parent_span"):
@@ -437,7 +438,7 @@ class TestInstrumentation:
         # If gen_ai_client_span found, continue verification
         attributes = gen_ai_client_span.attributes
         assert (
-            attributes.get(gen_ai_attributes.GEN_AI_OPERATION_NAME) == handler.req.path
+            attributes.get(gen_ai_attributes.GEN_AI_OPERATION_NAME) == "chat"
         )
         assert attributes.get(gen_ai_attributes.GEN_AI_SYSTEM) == handler.llm_provider
         assert (
@@ -843,7 +844,7 @@ class TestInstrumentation:
         attributes = gen_ai_response.attributes
 
         assert (
-            attributes.get(gen_ai_attributes.GEN_AI_OPERATION_NAME) == handler.req.path
+            attributes.get(gen_ai_attributes.GEN_AI_OPERATION_NAME) == "chat"
         )
         assert attributes.get(gen_ai_attributes.GEN_AI_SYSTEM) == handler.llm_provider
         assert attributes.get(gen_ai_attributes.GEN_AI_RESPONSE_ID) == "fake"
