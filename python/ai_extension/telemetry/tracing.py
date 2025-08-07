@@ -22,6 +22,14 @@ logger: logging.Logger = logging.getLogger().getChild(
     "kgateway-ai-ext.external_processor"
 )
 
+class WebhookResult:
+    REJECTED = "rejected"
+    PASSED = "passed"
+    MODIFIED = "modified"
+
+class RejectResult:
+    REJECTED = "rejected"
+    PASSED = "passed"
 
 class Sampler(BaseModel):
     type: str | None = Field(default=None)

@@ -20,7 +20,7 @@ import gzip
 
 from telemetry.stats import Config as StatsConfig
 import telemetry.attributes as ai_attributes
-from telemetry.tracing import Config as TracingConfig, OtelTracer
+from telemetry.tracing import Config as TracingConfig, OtelTracer, WebhookResult, RejectResult
 from .stream import Handler as StreamHandler
 from guardrails.regex import RegexRejection
 
@@ -393,14 +393,14 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                 if isinstance(response, PromptMessages):
                     webhook_span.set_attributes(
                         {
-                            ai_attributes.AI_WEBHOOK_RESULT: "modified",
+                            ai_attributes.AI_WEBHOOK_RESULT: WebhookResult.MODIFIED,
                         }
                     )
                     handler.provider.update_request_body_from_webhook(body, response)
                 elif isinstance(response, RejectAction):
                     webhook_span.set_attributes(
                         {
-                            ai_attributes.AI_WEBHOOK_RESULT: "rejected",
+                            ai_attributes.AI_WEBHOOK_RESULT: WebhookResult.REJECTED,
                             ai_attributes.AI_WEBHOOK_REJECT_REASON: response.reason,
                         }
                     )
@@ -420,7 +420,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                 else:
                     # response is None - webhook did not modify anything
                     webhook_span.set_attribute(
-                        ai_attributes.AI_WEBHOOK_RESULT, "passed"
+                        ai_attributes.AI_WEBHOOK_RESULT, WebhookResult.PASSED
                     )
 
                 # No need to explicitly set OK status - it's the default
@@ -452,9 +452,9 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                 handler.provider.iterate_str_req_messages(
                     body=body, cb=handler.req_regex_transform
                 )
-                regex_span.set_attribute(ai_attributes.AI_REGEX_RESULT, "passed")
+                regex_span.set_attribute(ai_attributes.AI_REGEX_RESULT, RejectResult.PASSED)
             except RegexRejection as e:
-                regex_span.set_attribute(ai_attributes.AI_REGEX_RESULT, "rejected")
+                regex_span.set_attribute(ai_attributes.AI_REGEX_RESULT, RejectResult.REJECTED)
                 regex_span.record_exception(e)
                 regex_span.set_status(
                     trace.StatusCode.ERROR,
@@ -624,11 +624,11 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                         body, response
                     )
                     webhook_span.set_attribute(
-                        ai_attributes.AI_WEBHOOK_RESULT, "masked"
+                        ai_attributes.AI_WEBHOOK_RESULT, WebhookResult.MODIFIED
                     )
                 else:
                     webhook_span.set_attribute(
-                        ai_attributes.AI_WEBHOOK_RESULT, "passed"
+                        ai_attributes.AI_WEBHOOK_RESULT, WebhookResult.PASSED
                     )
             except Exception as e:
                 webhook_span.record_exception(e)
