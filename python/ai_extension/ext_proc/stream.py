@@ -201,7 +201,7 @@ class Handler:
             handler = Handler(
                 logger=sub_logger, provider=Gemini(), llm_provider=llm_provider
             )
-        elif llm_provider == OPENAI_LLM_STR:
+        else:
             handler = Handler(
                 logger=sub_logger, provider=OpenAI(), llm_provider=llm_provider
             )
