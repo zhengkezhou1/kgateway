@@ -882,7 +882,7 @@ class TestInstrumentation:
                         }
                     }
                 },
-                "masked",
+                "modified",
             ),
         ],
     )
