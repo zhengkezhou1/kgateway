@@ -133,14 +133,16 @@ func (refs ReferenceGrants) SecretAllowed(ctx krt.HandlerContext, resourceName s
 	return false
 }
 
-func (refs ReferenceGrants) BackendAllowed(ctx krt.HandlerContext,
+func (refs ReferenceGrants) BackendAllowed(
+	ctx krt.HandlerContext,
 	k schema.GroupVersionKind,
 	backendName gwv1beta1.ObjectName,
 	backendNamespace gwv1beta1.Namespace,
 	routeNamespace string,
+	refKind schema.GroupVersionKind,
 ) bool {
 	from := Reference{Kind: k, Namespace: gwv1beta1.Namespace(routeNamespace)}
-	to := Reference{Kind: wellknown.SecretGVK, Namespace: backendNamespace}
+	to := Reference{Kind: refKind, Namespace: backendNamespace}
 	pair := ReferencePair{From: from, To: to}
 	grants := krt.Fetch(ctx, refs.collection, krt.FilterIndex(refs.index, pair))
 	for _, g := range grants {
