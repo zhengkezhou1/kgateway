@@ -3657,7 +3657,8 @@ func schema_kgateway_v2_api_v1alpha1_HTTPListenerPolicy(ref common.ReferenceCall
 	return common.OpenAPIDefinition{
 		Schema: spec.Schema{
 			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
+				Description: "HTTPListenerPolicy is intended to be used for configuring the Envoy `HttpConnectionManager` and any other config or policy that should map 1-to-1 with a given HTTP listener, such as the Envoy health check HTTP filter. Currently these policies can only be applied per `Gateway` but support for `Listener` attachment may be added in the future. See https://github.com/kgateway-dev/kgateway/issues/11786 for more details.",
+				Type:        []string{"object"},
 				Properties: map[string]spec.Schema{
 					"kind": {
 						SchemaProps: spec.SchemaProps{
