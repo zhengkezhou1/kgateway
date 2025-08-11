@@ -20,7 +20,12 @@ import gzip
 
 from telemetry.stats import Config as StatsConfig
 import telemetry.attributes as ai_attributes
-from telemetry.tracing import Config as TracingConfig, OtelTracer, WebhookResult, RejectResult
+from telemetry.tracing import (
+    Config as TracingConfig,
+    OtelTracer,
+    WebhookResult,
+    RejectResult,
+)
 from .stream import Handler as StreamHandler
 from guardrails.regex import RegexRejection
 
@@ -452,9 +457,13 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                 handler.provider.iterate_str_req_messages(
                     body=body, cb=handler.req_regex_transform
                 )
-                regex_span.set_attribute(ai_attributes.AI_REGEX_RESULT, RejectResult.PASSED)
+                regex_span.set_attribute(
+                    ai_attributes.AI_REGEX_RESULT, RejectResult.PASSED
+                )
             except RegexRejection as e:
-                regex_span.set_attribute(ai_attributes.AI_REGEX_RESULT, RejectResult.REJECTED)
+                regex_span.set_attribute(
+                    ai_attributes.AI_REGEX_RESULT, RejectResult.REJECTED
+                )
                 regex_span.record_exception(e)
                 regex_span.set_status(
                     trace.StatusCode.ERROR,
@@ -490,7 +499,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
             with tracer.start_as_current_span(
                 f"gen_ai.request {operation_name} {handler.request_model}",
                 context=trace.set_span_in_context(parent_span),
-                attributes=handler.provider.get_attributes_for_request_body(body),
+                attributes=handler.get_attributes_for_request_body(body),
             ) as gen_ai_client_span:
                 # follow two attributes don't contain in request body directly.
                 gen_ai_client_span.set_attributes(
@@ -573,14 +582,14 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
         return extproc_clear_request_body()
 
     async def handle_response_body_resp_webhook(
-            self,
-            body: dict,
-            handler: StreamHandler,
-            parent_span: trace.Span,
+        self,
+        body: dict,
+        handler: StreamHandler,
+        parent_span: trace.Span,
     ) -> external_processor_pb2.ProcessingResponse | None:
         with OtelTracer.get().start_as_current_span(
-                "handle_response_body_resp_webhook",
-                context=trace.set_span_in_context(parent_span),
+            "handle_response_body_resp_webhook",
+            context=trace.set_span_in_context(parent_span),
         ) as webhook_span:
             webhook = handler.resp_webhook
             webhook_span.set_attributes(
@@ -589,9 +598,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                 }
             )
             try:
-                response: (
-                        ResponseChoices | None
-                ) = await make_response_webhook_request(
+                response: ResponseChoices | None = await make_response_webhook_request(
                     webhook_host=handler.resp_webhook.endpoint.host,
                     webhook_port=handler.resp_webhook.endpoint.port,
                     headers=handler.resp.headers,
@@ -601,9 +608,7 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                 )
 
                 if response is not None:
-                    handler.provider.update_response_body_from_webhook(
-                        body, response
-                    )
+                    handler.provider.update_response_body_from_webhook(body, response)
                     webhook_span.set_attribute(
                         ai_attributes.AI_WEBHOOK_RESULT, WebhookResult.MODIFIED
                     )
@@ -625,13 +630,11 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                 )
 
     async def handle_response_body_resp_regex(
-            self,
-            body: dict,
-            handler: StreamHandler,
-            parent_span: trace.Span) -> None:
+        self, body: dict, handler: StreamHandler, parent_span: trace.Span
+    ) -> None:
         with OtelTracer.get().start_as_current_span(
-                "handle_response_body_resp_regex",
-                context=trace.set_span_in_context(parent_span),
+            "handle_response_body_resp_regex",
+            context=trace.set_span_in_context(parent_span),
         ):
             handler.provider.iterate_str_resp_messages(
                 body=body, cb=handler.resp_regex_transform
@@ -735,7 +738,9 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                             )
                     else:
                         # Set all response attributes directly on the no_streaming_span
-                        non_streaming_span.set_attributes(handler.provider.get_attributes_for_response_body(jsn))
+                        non_streaming_span.set_attributes(
+                            handler.provider.get_attributes_for_response_body(jsn)
+                        )
 
                         # follow two attributes don't contain in response body directly.
                         non_streaming_span.set_attributes(
@@ -755,12 +760,19 @@ class ExtProcServer(external_processor_pb2_grpc.ExternalProcessorServicer):
                         handler.set_response_model(handler.provider.get_model_resp(jsn))
 
                         if handler.resp_webhook and not has_function_call_resp:
-                            if error_response := await self.handle_response_body_resp_webhook(jsn, handler, non_streaming_span):
+                            if (
+                                error_response
+                                := await self.handle_response_body_resp_webhook(
+                                    jsn, handler, non_streaming_span
+                                )
+                            ):
                                 return error_response
-                            
+
                         # Only run regex if the response has no tools
                         if handler.resp_regex and not has_function_call_resp:
-                            await self.handle_response_body_resp_regex(jsn, handler, non_streaming_span)
+                            await self.handle_response_body_resp_regex(
+                                jsn, handler, non_streaming_span
+                            )
 
                         return external_processor_pb2.ProcessingResponse(
                             response_body=external_processor_pb2.BodyResponse(

@@ -437,10 +437,10 @@ class TestInstrumentation:
 
         # If gen_ai_client_span found, continue verification
         attributes = gen_ai_client_span.attributes
+        assert attributes.get(gen_ai_attributes.GEN_AI_OPERATION_NAME) == "chat"
         assert (
-            attributes.get(gen_ai_attributes.GEN_AI_OPERATION_NAME) == "chat"
+            attributes.get(gen_ai_attributes.GEN_AI_SYSTEM) == handler.get_ai_system()
         )
-        assert attributes.get(gen_ai_attributes.GEN_AI_SYSTEM) == handler.get_ai_system()
         assert (
             attributes.get(gen_ai_attributes.GEN_AI_OUTPUT_TYPE)
             == request_body_content["response_format"]["type"]
@@ -575,7 +575,8 @@ class TestInstrumentation:
         assert len(spans) >= 1, "Expected at least one span to be created"
 
         webhook_span = next(
-            (s for s in spans if s.name.startswith("handle_request_body_req_webhook")), None
+            (s for s in spans if s.name.startswith("handle_request_body_req_webhook")),
+            None,
         )
         assert webhook_span is not None, (
             "Expected a handle_request_body_req_webhook span to be created"
@@ -585,11 +586,12 @@ class TestInstrumentation:
         assert webhook_attributes is not None, (
             "Webhook span attributes should not be None"
         )
-        assert (
-            webhook_attributes.get(ai_attributes.AI_WEBHOOK_ENDPOINT)
-            == str(handler.req_webhook.endpoint)
+        assert webhook_attributes.get(ai_attributes.AI_WEBHOOK_ENDPOINT) == str(
+            handler.req_webhook.endpoint
         )
-        assert webhook_attributes.get(ai_attributes.AI_WEBHOOK_RESULT) == expected_result
+        assert (
+            webhook_attributes.get(ai_attributes.AI_WEBHOOK_RESULT) == expected_result
+        )
 
     @pytest.mark.parametrize(
         argnames="regex_config,test_content,expected_result",
@@ -664,14 +666,20 @@ class TestInstrumentation:
         assert len(spans) >= 1, "Expected at least one span to be created"
 
         regex_span = next(
-            (s for s in spans if s.name.startswith("handle_request_body_req_regex")), None
+            (s for s in spans if s.name.startswith("handle_request_body_req_regex")),
+            None,
         )
         assert regex_span is not None, (
             "Expected a handle_request_body_req_regex span to be created"
         )
-        assert regex_span.attributes.get(ai_attributes.AI_REGEX_ACTION) == regex_config.action.value
+        assert (
+            regex_span.attributes.get(ai_attributes.AI_REGEX_ACTION)
+            == regex_config.action.value
+        )
 
-        assert regex_span.attributes.get(ai_attributes.AI_REGEX_RESULT) == expected_result
+        assert (
+            regex_span.attributes.get(ai_attributes.AI_REGEX_RESULT) == expected_result
+        )
 
     @pytest.mark.parametrize(
         argnames="moderation_flagged,expected_result",
@@ -757,7 +765,12 @@ class TestInstrumentation:
         assert len(spans) >= 1, "Expected at least one span to be created"
 
         moderation_span = next(
-            (s for s in spans if s.name.startswith("handle_request_body_req_moderation")), None
+            (
+                s
+                for s in spans
+                if s.name.startswith("handle_request_body_req_moderation")
+            ),
+            None,
         )
         assert moderation_span is not None, (
             "Expected a handle_request_body_req_moderation span to be created"
@@ -765,7 +778,10 @@ class TestInstrumentation:
 
         moderation_attributes = moderation_span.attributes
         assert moderation_attributes.get(ai_attributes.AI_MODERATION_MODEL) == model
-        assert moderation_attributes.get(ai_attributes.AI_MODERATION_FLAGGED) == moderation_flagged
+        assert (
+            moderation_attributes.get(ai_attributes.AI_MODERATION_FLAGGED)
+            == moderation_flagged
+        )
 
     @pytest.fixture(scope="package")
     def response_body_content(self):
@@ -795,9 +811,7 @@ class TestInstrumentation:
               "system_fingerprint": "fp_48196bc67a"
           }"""
 
-    def test_handle_response_body(
-        self, setup_in_memory_tracer, response_body_content
-    ):
+    def test_handle_response_body(self, setup_in_memory_tracer, response_body_content):
         """Test basic response body handling with instrumentation."""
         memory_exporter, test_tracer = setup_in_memory_tracer
         current_tracer = OtelTracer.get()
@@ -843,10 +857,10 @@ class TestInstrumentation:
         # Verify response span attributes
         attributes = gen_ai_response.attributes
 
+        assert attributes.get(gen_ai_attributes.GEN_AI_OPERATION_NAME) == "chat"
         assert (
-            attributes.get(gen_ai_attributes.GEN_AI_OPERATION_NAME) == "chat"
+            attributes.get(gen_ai_attributes.GEN_AI_SYSTEM) == handler.get_ai_system()
         )
-        assert attributes.get(gen_ai_attributes.GEN_AI_SYSTEM) == handler.get_ai_system()
         assert attributes.get(gen_ai_attributes.GEN_AI_RESPONSE_ID) == "fake"
         assert (
             attributes.get(gen_ai_attributes.GEN_AI_RESPONSE_MODEL)
@@ -948,7 +962,11 @@ class TestInstrumentation:
         assert len(spans) >= 1, "Expected at least one span to be created"
 
         webhook_span = next(
-            (s for s in spans if s.name.startswith("handle_response_body_resp_webhook")),
+            (
+                s
+                for s in spans
+                if s.name.startswith("handle_response_body_resp_webhook")
+            ),
             None,
         )
 
@@ -958,5 +976,7 @@ class TestInstrumentation:
 
         # Verify webhook span attributes
         attributes = webhook_span.attributes
-        assert attributes.get(ai_attributes.AI_WEBHOOK_ENDPOINT) == str(handler.resp_webhook.endpoint)
+        assert attributes.get(ai_attributes.AI_WEBHOOK_ENDPOINT) == str(
+            handler.resp_webhook.endpoint
+        )
         assert attributes.get(ai_attributes.AI_WEBHOOK_RESULT) == expected_result
