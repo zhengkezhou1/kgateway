@@ -1,6 +1,7 @@
 import asyncio
 import json
 import logging
+from typing import Optional
 
 import pytest
 
@@ -360,9 +361,9 @@ def stream_handler(metadict: dict) -> StreamHandler:
 
 
 class TestInstrumentation:
-    @pytest.fixture(scope="package")
+    @pytest.fixture(scope="class")
     def request_body_content(self):
-        """Fixture for common request body content."""
+        """Fixture for common OpenAI request body content."""
         return {
             "model": "openai/gpt-4o",
             "messages": [
@@ -387,56 +388,179 @@ class TestInstrumentation:
             "top_p": 0.9,
         }
 
-    def test_handle_request_body(self, setup_in_memory_tracer, request_body_content):
-        """Test that request body handling creates proper spans with attributes"""
-        memory_exporter, test_tracer = setup_in_memory_tracer
+    @pytest.fixture(scope="class")
+    def response_body_content(self):
+        """Fixture for common OpenAI response body content."""
+        return """{
+              "id": "fake",
+              "object": "chat.completion",
+              "created": 1722966273,
+              "model": "gpt-4o-mini-2024-07-18",
+              "choices": [
+                  {
+                      "index": 0,
+                      "message": {
+                          "role": "assistant",
+                          "content": "Say hello to the world!",
+                          "refusal": null
+                      },
+                      "logprobs": null,
+                      "finish_reason": "stop"
+                  }
+              ],
+              "usage": {
+                  "prompt_tokens": 11,
+                  "completion_tokens": 310,
+                  "total_tokens": 321
+              },
+              "system_fingerprint": "fp_48196bc67a"
+          }"""
 
-        # Check OtelTracer configuration
-        current_tracer = OtelTracer.get()
-        assert current_tracer is test_tracer, (
-            "Current tracer does not match test tracer"
-        )
+    @pytest.fixture
+    def base_handler(self):
+        metadict = {"x-llm-provider": "openai"}
+        handler = stream_handler(metadict)
+        handler.req.path = "/chat/completions"
+        return handler
 
-        req_body = external_processor_pb2.HttpBody(
-            body=json.dumps(request_body_content).encode("utf-8"),
+    # ========== Helper Methods ==========
+    def _create_request_body(
+        self, content: dict[str, any]
+    ) -> external_processor_pb2.HttpBody:
+        return external_processor_pb2.HttpBody(
+            body=json.dumps(content).encode("utf-8"),
             end_of_stream=True,
         )
 
-        metadict = {"x-llm-provider": "openai"}
-        handler = stream_handler(metadict)
-        handler.req_webhook = None
-        handler.req.path = "/chat/completions"
+    def _create_response_body(self, content: str) -> external_processor_pb2.HttpBody:
+        return external_processor_pb2.HttpBody(
+            body=content.encode("utf-8"), end_of_stream=True
+        )
 
-        # Create a test span in the parent span
+    def _execute_request_body_test(
+        self,
+        test_tracer: trace.Tracer,
+        req_body: external_processor_pb2.HttpBody,
+        handler: StreamHandler,
+        metadict: Optional[dict[str, str]] = None,
+    ) -> external_processor_pb2.ProcessingResponse:
+        if metadict is None:
+            metadict = {"x-llm-provider": "openai"}
+
         with test_tracer.start_as_current_span("test_parent_span"):
             response = asyncio.run(
                 extproc_server.handle_request_body(
                     req_body,
                     metadict,
                     handler,
-                    None,  # No parent span for this test
+                    None,
                 )
             )
+        return response
 
-        # Verify response
-        assert response is not None
-        assert isinstance(response, external_processor_pb2.ProcessingResponse)
+    def _execute_response_body_test(
+        self,
+        test_tracer: trace.Tracer,
+        resp_body: external_processor_pb2.HttpBody,
+        handler: StreamHandler,
+    ) -> external_processor_pb2.ProcessingResponse:
+        with test_tracer.start_as_current_span("test_parent_span"):
+            response = asyncio.run(
+                extproc_server.handle_response_body(
+                    resp_body,
+                    handler,
+                    None,
+                )
+            )
+        return response
+
+    def _verify_basic_response(
+        self, response: external_processor_pb2.ProcessingResponse
+    ):
+        """verify basic response"""
+        assert response is not None, "Response should not be None"
+        assert isinstance(response, external_processor_pb2.ProcessingResponse), (
+            "Response should be ProcessingResponse instance"
+        )
+
+    def _find_span_by_name_prefix(self, spans: list, name_prefix: str):
+        """Find span by name prefix"""
+        span = next((s for s in spans if s.name.startswith(name_prefix)), None)
+        assert span is not None, f"Expected a {name_prefix} span to be created"
+        return span
+
+    def _verify_tracer_setup(self, test_tracer, setup_in_memory_tracer):
+        """Verify tracer setup"""
+        memory_exporter, tracer = setup_in_memory_tracer
+        current_tracer = OtelTracer.get()
+        assert current_tracer is test_tracer, (
+            "Current tracer does not match test tracer"
+        )
+        return memory_exporter
+
+    def _create_webhook_config(
+        self, host: str = "example.com", port: int = 443
+    ):
+        """Create webhook config"""
+        return prompt_guard.Webhook.from_json(
+            {
+                "endpoint": {"host": host, "port": port},
+                "forwardHeaders": [
+                    {
+                        "type": "Exact",
+                        "name": "Authorization",
+                        "value": "Bearer test-token",
+                    }
+                ],
+            }
+        )
+
+    def _create_parameterized_moderation_client(self, flagged: bool, model: str):
+        """Create parameterized moderation client"""
+
+        class ParameterizedMockModerationClient(AsyncModerations):
+            async def create(self, **params):
+                return ModerationCreateResponse(
+                    id="test-id",
+                    model=model,
+                    results=[
+                        Moderation(
+                            flagged=flagged,
+                            categories=Categories.construct(),
+                            category_scores=CategoryScores.construct(),
+                            category_applied_input_types=CategoryAppliedInputTypes.construct(),
+                        )
+                    ],
+                )
+
+        return ParameterizedMockModerationClient(client=MockAsyncOpenAI(client=None))
+
+    # ========== Test Methods ==========
+    def test_handle_request_body(
+        self, setup_in_memory_tracer, request_body_content, base_handler
+    ):
+        """Test that request body handling creates proper spans with attributes"""
+        memory_exporter, test_tracer = setup_in_memory_tracer
+        self._verify_tracer_setup(test_tracer, setup_in_memory_tracer)
+
+        req_body = self._create_request_body(request_body_content)
+        base_handler.req_webhook = None
+
+        response = self._execute_request_body_test(test_tracer, req_body, base_handler)
+        self._verify_basic_response(response)
 
         # Verify instrumentation
         spans = memory_exporter.get_finished_spans()
-
         assert len(spans) >= 1, "Expected at least one span to be created"
 
-        # Find the main request span
-        gen_ai_client_span = next(
-            (s for s in spans if s.name.startswith("gen_ai.request")), None
-        )
-        assert gen_ai_client_span is not None, (
-            "Expected a gen_ai.request span to be created"
-        )
+        gen_ai_client_span = self._find_span_by_name_prefix(spans, "gen_ai.request")
 
-        # If gen_ai_client_span found, continue verification
+        # Verify attributes
         attributes = gen_ai_client_span.attributes
+        self._verify_request_attributes(attributes, request_body_content, base_handler)
+
+    def _verify_request_attributes(self, attributes, request_body_content, handler):
+        """Verify request attributes"""
         assert attributes.get(gen_ai_attributes.GEN_AI_OPERATION_NAME) == "chat"
         assert (
             attributes.get(gen_ai_attributes.GEN_AI_SYSTEM) == handler.get_ai_system()
@@ -486,11 +610,9 @@ class TestInstrumentation:
         )
 
     @pytest.mark.parametrize(
-        argnames="webhook_response, expected_result",
-        argvalues=[
-            # Pass scenario: webhook allows content through
+        "webhook_response,expected_result",
+        [
             ({"action": {"type": "pass"}}, "passed"),
-            # Modify scenario: webhook modifies content
             (
                 {
                     "action": {
@@ -500,7 +622,6 @@ class TestInstrumentation:
                 },
                 "modified",
             ),
-            # Reject scenario: webhook rejects content
             (
                 {
                     "action": {
@@ -513,23 +634,22 @@ class TestInstrumentation:
                 "rejected",
             ),
         ],
+        ids=["pass", "modify", "reject"],
     )
     def test_handle_request_body_webhook(
         self,
         httpx_mock,
         setup_in_memory_tracer,
         request_body_content,
+        base_handler,
         webhook_response,
         expected_result,
     ):
         """Test webhook instrumentation with mocked HTTP client for different scenarios."""
         memory_exporter, test_tracer = setup_in_memory_tracer
-        current_tracer = OtelTracer.get()
-        assert current_tracer is test_tracer, (
-            "Current tracer does not match test tracer"
-        )
+        self._verify_tracer_setup(test_tracer, setup_in_memory_tracer)
 
-        # Setup HTTP mock for webhook endpoint
+        # Setup HTTP mock
         httpx_mock.add_response(
             url="http://example.com:443/request",
             method="POST",
@@ -537,66 +657,31 @@ class TestInstrumentation:
             status_code=200,
         )
 
-        req_body = external_processor_pb2.HttpBody(
-            body=json.dumps(request_body_content).encode("utf-8"),
-            end_of_stream=True,
-        )
+        req_body = self._create_request_body(request_body_content)
+        base_handler.req_webhook = self._create_webhook_config()
 
-        metadict = {"x-llm-provider": "openai"}
-        handler = stream_handler(metadict)
-
-        handler.req_webhook = prompt_guard.Webhook.from_json(
-            {
-                "endpoint": {"host": "example.com", "port": 443},
-                "forwardHeaders": [
-                    {
-                        "type": "Exact",
-                        "name": "Authorization",
-                        "value": "Bearer test-token",
-                    }
-                ],
-            }
-        )
-
-        # Process request with webhook
-        with test_tracer.start_as_current_span("test_parent_span"):
-            response = asyncio.run(
-                extproc_server.handle_request_body(
-                    req_body,
-                    metadict,
-                    handler,
-                    None,
-                )
-            )
-        assert response is not None
-        assert isinstance(response, external_processor_pb2.ProcessingResponse)
+        response = self._execute_request_body_test(test_tracer, req_body, base_handler)
+        self._verify_basic_response(response)
 
         spans = memory_exporter.get_finished_spans()
-        assert len(spans) >= 1, "Expected at least one span to be created"
-
-        webhook_span = next(
-            (s for s in spans if s.name.startswith("handle_request_body_req_webhook")),
-            None,
-        )
-        assert webhook_span is not None, (
-            "Expected a handle_request_body_req_webhook span to be created"
+        webhook_span = self._find_span_by_name_prefix(
+            spans, "handle_request_body_req_webhook"
         )
 
-        webhook_attributes = webhook_span.attributes
-        assert webhook_attributes is not None, (
-            "Webhook span attributes should not be None"
-        )
-        assert webhook_attributes.get(ai_attributes.AI_WEBHOOK_ENDPOINT) == str(
+        self._verify_webhook_attributes(webhook_span, base_handler, expected_result)
+
+    def _verify_webhook_attributes(self, span, handler, expected_result):
+        """Verify webhook attributes"""
+        attributes = span.attributes
+        assert attributes is not None, "Webhook span attributes should not be None"
+        assert attributes.get(ai_attributes.AI_WEBHOOK_ENDPOINT) == str(
             handler.req_webhook.endpoint
         )
-        assert (
-            webhook_attributes.get(ai_attributes.AI_WEBHOOK_RESULT) == expected_result
-        )
+        assert attributes.get(ai_attributes.AI_WEBHOOK_RESULT) == expected_result
 
     @pytest.mark.parametrize(
-        argnames="regex_config,test_content,expected_result",
-        argvalues=[
-            # Phone number masking test
+        "regex_config,test_content,expected_result",
+        [
             (
                 {
                     "matches": [{"pattern": r"\d{3}-\d{3}-\d{4}", "name": "phone"}],
@@ -606,7 +691,6 @@ class TestInstrumentation:
                 "My phone number is 123-456-7890",
                 "passed",
             ),
-            # Credit card rejection test
             (
                 {
                     "matches": [
@@ -616,247 +700,132 @@ class TestInstrumentation:
                     "action": "REJECT",
                 },
                 "My credit card number is 4532-1234-5678-9012",
-                "passed",  # TODO: Change to "rejected" when rejection logic is implemented
+                "passed",
             ),
         ],
+        ids=["phone_mask", "credit_card_reject"],
     )
     def test_handle_request_body_regex(
         self,
         setup_in_memory_tracer,
         request_body_content,
+        base_handler,
         regex_config,
         test_content,
         expected_result,
     ):
         """Test regex filtering instrumentation with different patterns and actions."""
         memory_exporter, test_tracer = setup_in_memory_tracer
-        current_tracer = OtelTracer.get()
-        assert current_tracer is test_tracer, (
-            "Current tracer does not match test tracer"
-        )
+        self._verify_tracer_setup(test_tracer, setup_in_memory_tracer)
 
-        req_body = external_processor_pb2.HttpBody(
-            body=json.dumps(request_body_content).encode("utf-8"),
-            end_of_stream=True,
-        )
-
-        metadict = {"x-llm-provider": "openai"}
-        handler = stream_handler(metadict)
+        req_body = self._create_request_body(request_body_content)
 
         # Configure regex filtering
-        regex_config = prompt_guard.Regex.from_json(regex_config)
-        handler.req_regex = init_presidio_config(regex_config)
-        handler.req_regex_action = regex_config.action
+        regex_config_obj = prompt_guard.Regex.from_json(regex_config)
+        base_handler.req_regex = init_presidio_config(regex_config_obj)
+        base_handler.req_regex_action = regex_config_obj.action
 
-        # Process request with regex filtering
-        with test_tracer.start_as_current_span("test_parent_span"):
-            response = asyncio.run(
-                extproc_server.handle_request_body(
-                    req_body,
-                    metadict,
-                    handler,
-                    None,
-                )
-            )
-
-        assert response is not None
-        assert isinstance(response, external_processor_pb2.ProcessingResponse)
+        response = self._execute_request_body_test(test_tracer, req_body, base_handler)
+        self._verify_basic_response(response)
 
         spans = memory_exporter.get_finished_spans()
-        assert len(spans) >= 1, "Expected at least one span to be created"
+        regex_span = self._find_span_by_name_prefix(
+            spans, "handle_request_body_req_regex"
+        )
 
-        regex_span = next(
-            (s for s in spans if s.name.startswith("handle_request_body_req_regex")),
-            None,
-        )
-        assert regex_span is not None, (
-            "Expected a handle_request_body_req_regex span to be created"
-        )
+        self._verify_regex_attributes(regex_span, regex_config_obj, expected_result)
+
+    def _verify_regex_attributes(self, span, regex_config, expected_result):
+        """Verify regex attributes"""
         assert (
-            regex_span.attributes.get(ai_attributes.AI_REGEX_ACTION)
+            span.attributes.get(ai_attributes.AI_REGEX_ACTION)
             == regex_config.action.value
         )
-
-        assert (
-            regex_span.attributes.get(ai_attributes.AI_REGEX_RESULT) == expected_result
-        )
+        assert span.attributes.get(ai_attributes.AI_REGEX_RESULT) == expected_result
 
     @pytest.mark.parametrize(
-        argnames="moderation_flagged,expected_result",
-        argvalues=[
-            (False, "passed"),  # Content passes moderation
-            (True, "rejected"),  # Content is rejected by moderation
+        "moderation_flagged,expected_result",
+        [
+            (False, "passed"),
+            (True, "rejected"),
         ],
+        ids=["moderation_pass", "moderation_reject"],
     )
     def test_handle_request_body_moderation(
         self,
         setup_in_memory_tracer,
         request_body_content,
+        base_handler,
         moderation_flagged,
         expected_result,
     ):
         """Test content moderation instrumentation with different flagging scenarios."""
         memory_exporter, test_tracer = setup_in_memory_tracer
-        current_tracer = OtelTracer.get()
-        assert current_tracer is test_tracer
+        self._verify_tracer_setup(test_tracer, setup_in_memory_tracer)
+
         model = "text-moderation-latest"
+        req_body = self._create_request_body(request_body_content)
 
-        # Create parameterized mock moderation client
-        class ParameterizedMockModerationClient(AsyncModerations):
-            async def create(self, **params):
-                response = ModerationCreateResponse(
-                    id="test-id",
-                    model=model,
-                    results=[
-                        Moderation(
-                            flagged=moderation_flagged,
-                            categories=Categories.construct(),
-                            category_scores=CategoryScores.construct(),
-                            category_applied_input_types=CategoryAppliedInputTypes.construct(),
-                        )
-                    ],
-                )
-                return response
-
-        req_body = external_processor_pb2.HttpBody(
-            body=json.dumps(request_body_content).encode("utf-8"),
-            end_of_stream=True,
-        )
-
-        metadict = {"x-llm-provider": "openai"}
-        handler = stream_handler(metadict)
-
-        handler.req_webhook = None
-        handler.req_regex = None
-
-        # Configure moderation
-        handler.req_moderation = (
-            ParameterizedMockModerationClient(client=MockAsyncOpenAI(client=None)),
+        base_handler.req_webhook = None
+        base_handler.req_regex = None
+        base_handler.req_moderation = (
+            self._create_parameterized_moderation_client(moderation_flagged, model),
             model,
         )
 
-        with test_tracer.start_as_current_span("test_parent_span"):
-            response = asyncio.run(
-                extproc_server.handle_request_body(
-                    req_body,
-                    metadict,
-                    handler,
-                    None,
-                )
-            )
+        response = self._execute_request_body_test(test_tracer, req_body, base_handler)
+        self._verify_basic_response(response)
 
-        assert response is not None
-        assert isinstance(response, external_processor_pb2.ProcessingResponse)
+        self._verify_moderation_response_behavior(response, expected_result)
 
-        # Verify response behavior based on moderation result
+        spans = memory_exporter.get_finished_spans()
+        moderation_span = self._find_span_by_name_prefix(
+            spans, "handle_request_body_req_moderation"
+        )
+
+        self._verify_moderation_attributes(moderation_span, model, moderation_flagged)
+
+    def _verify_moderation_response_behavior(self, response, expected_result):
+        """Verify moderation response behavior"""
         if expected_result == "rejected":
-            # Rejected content should have immediate response
             assert hasattr(response, "immediate_response")
             assert response.immediate_response is not None
             assert (
                 response.immediate_response.body == b"Rejected by guardrails moderation"
             )
         else:
-            # Passed content should have normal request_body response
             assert hasattr(response, "request_body")
             assert response.request_body is not None
 
-        spans = memory_exporter.get_finished_spans()
-        assert len(spans) >= 1, "Expected at least one span to be created"
+    def _verify_moderation_attributes(self, span, model, flagged):
+        """Verify moderation attributes"""
+        attributes = span.attributes
+        assert attributes.get(ai_attributes.AI_MODERATION_MODEL) == model
+        assert attributes.get(ai_attributes.AI_MODERATION_FLAGGED) == flagged
 
-        moderation_span = next(
-            (
-                s
-                for s in spans
-                if s.name.startswith("handle_request_body_req_moderation")
-            ),
-            None,
-        )
-        assert moderation_span is not None, (
-            "Expected a handle_request_body_req_moderation span to be created"
-        )
-
-        moderation_attributes = moderation_span.attributes
-        assert moderation_attributes.get(ai_attributes.AI_MODERATION_MODEL) == model
-        assert (
-            moderation_attributes.get(ai_attributes.AI_MODERATION_FLAGGED)
-            == moderation_flagged
-        )
-
-    @pytest.fixture(scope="package")
-    def response_body_content(self):
-        """Fixture for common response body content."""
-        return """{
-              "id": "fake",
-              "object": "chat.completion",
-              "created": 1722966273,
-              "model": "gpt-4o-mini-2024-07-18",
-              "choices": [
-                  {
-                      "index": 0,
-                      "message": {
-                          "role": "assistant",
-                          "content": "Say hello to the world!",
-                          "refusal": null
-                      },
-                      "logprobs": null,
-                      "finish_reason": "stop"
-                  }
-              ],
-              "usage": {
-                  "prompt_tokens": 11,
-                  "completion_tokens": 310,
-                  "total_tokens": 321
-              },
-              "system_fingerprint": "fp_48196bc67a"
-          }"""
-
-    def test_handle_response_body(self, setup_in_memory_tracer, response_body_content):
+    def test_handle_response_body(
+        self, setup_in_memory_tracer, response_body_content, base_handler
+    ):
         """Test basic response body handling with instrumentation."""
         memory_exporter, test_tracer = setup_in_memory_tracer
-        current_tracer = OtelTracer.get()
-        assert current_tracer is test_tracer
+        self._verify_tracer_setup(test_tracer, setup_in_memory_tracer)
 
-        metadict = {"x-llm-provider": "openai"}
-        handler = stream_handler(metadict)
+        base_handler.resp_webhook = None
+        resp_body = self._create_response_body(response_body_content)
 
-        handler.resp_webhook = None
-        # Set operation name from user request path
-        handler.req.path = "/chat/completions"
-
-        resp_body = external_processor_pb2.HttpBody(
-            body=response_body_content.encode("utf-8"), end_of_stream=True
+        response = self._execute_response_body_test(
+            test_tracer, resp_body, base_handler
         )
+        self._verify_basic_response(response)
 
-        # Process response body
-        with test_tracer.start_as_current_span("test_parent_span"):
-            response = asyncio.run(
-                extproc_server.handle_response_body(
-                    resp_body,
-                    handler,
-                    None,
-                )
-            )
-        assert response is not None
-        assert isinstance(response, external_processor_pb2.ProcessingResponse)
-
-        # Verify instrumentation
         spans = memory_exporter.get_finished_spans()
+        gen_ai_response = self._find_span_by_name_prefix(spans, "gen_ai.response")
 
-        assert len(spans) >= 1, "Expected at least one span to be created"
+        self._verify_response_attributes(gen_ai_response, base_handler)
 
-        gen_ai_response = next(
-            (s for s in spans if s.name.startswith("gen_ai.response")),
-            None,
-        )
-
-        assert gen_ai_response is not None, (
-            "Expected a gen_ai.response span to be created"
-        )
-
-        # Verify response span attributes
-        attributes = gen_ai_response.attributes
-
+    def _verify_response_attributes(self, span, handler):
+        """Verify response attributes"""
+        attributes = span.attributes
         assert attributes.get(gen_ai_attributes.GEN_AI_OPERATION_NAME) == "chat"
         assert (
             attributes.get(gen_ai_attributes.GEN_AI_SYSTEM) == handler.get_ai_system()
@@ -879,8 +848,8 @@ class TestInstrumentation:
         )
 
     @pytest.mark.parametrize(
-        argnames="webhook_response, expected_result",
-        argvalues=[
+        "webhook_response,expected_result",
+        [
             ({"action": {"type": "pass"}}, "passed"),
             (
                 {
@@ -900,23 +869,22 @@ class TestInstrumentation:
                 "modified",
             ),
         ],
+        ids=["response_webhook_pass", "response_webhook_modify"],
     )
     def test_handle_response_body_webhook(
         self,
         setup_in_memory_tracer,
         httpx_mock,
         response_body_content,
+        base_handler,
         webhook_response,
         expected_result,
     ):
         """Test response body webhook processing with instrumentation."""
         memory_exporter, test_tracer = setup_in_memory_tracer
-        current_tracer = OtelTracer.get()
-        assert current_tracer is test_tracer, (
-            "Current tracer does not match test tracer"
-        )
+        self._verify_tracer_setup(test_tracer, setup_in_memory_tracer)
 
-        # Mock the HTTP response for the webhook
+        # Mock HTTP response
         httpx_mock.add_response(
             url="http://example.com:443/response",
             method="POST",
@@ -924,58 +892,26 @@ class TestInstrumentation:
             status_code=200,
         )
 
-        metadict = {"x-llm-provider": "openai"}
-        handler = stream_handler(metadict)
+        resp_body = self._create_response_body(response_body_content)
+        base_handler.resp_webhook = self._create_webhook_config()
 
-        # Setup response body
-        resp_body = external_processor_pb2.HttpBody(
-            body=response_body_content.encode("utf-8"), end_of_stream=True
+        response = self._execute_response_body_test(
+            test_tracer, resp_body, base_handler
         )
-
-        # Configure response webhook
-        handler.resp_webhook = prompt_guard.Webhook.from_json(
-            {
-                "endpoint": {"host": "example.com", "port": 443},
-                "forwardHeaders": [
-                    {
-                        "type": "Exact",
-                        "name": "Authorization",
-                        "value": "Bearer test-token",
-                    }
-                ],
-            }
-        )
-
-        # Process response with webhook
-        with test_tracer.start_as_current_span("test_parent_span"):
-            response = asyncio.run(
-                extproc_server.handle_response_body(
-                    resp_body,
-                    handler,
-                    None,
-                )
-            )
-        assert response is not None
-        assert isinstance(response, external_processor_pb2.ProcessingResponse)
+        self._verify_basic_response(response)
 
         spans = memory_exporter.get_finished_spans()
-        assert len(spans) >= 1, "Expected at least one span to be created"
-
-        webhook_span = next(
-            (
-                s
-                for s in spans
-                if s.name.startswith("handle_response_body_resp_webhook")
-            ),
-            None,
+        webhook_span = self._find_span_by_name_prefix(
+            spans, "handle_response_body_resp_webhook"
         )
 
-        assert webhook_span is not None, (
-            "Expected a handle_response_body_resp_webhook span to be created"
+        self._verify_response_webhook_attributes(
+            webhook_span, base_handler, expected_result
         )
 
-        # Verify webhook span attributes
-        attributes = webhook_span.attributes
+    def _verify_response_webhook_attributes(self, span, handler, expected_result):
+        """Verify response webhook attributes"""
+        attributes = span.attributes
         assert attributes.get(ai_attributes.AI_WEBHOOK_ENDPOINT) == str(
             handler.resp_webhook.endpoint
         )
