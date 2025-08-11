@@ -140,10 +140,10 @@ type Regex struct {
 
 // Webhook configures a webhook to forward requests or responses to for prompt guarding.
 type Webhook struct {
-	// Endpoint to send the traffic to.
+	// Host to send the traffic to.
 	// Note: TLS is not currently supported for webhook.
 	// +required
-	Endpoint Host `json:"endpoint"`
+	Host Host `json:"host"`
 
 	// ForwardHeaders define headers to forward with the request to the webhook.
 	ForwardHeaders []gwv1.HTTPHeaderMatch `json:"forwardHeaders,omitempty"`
