@@ -17,9 +17,10 @@ import (
 	"k8s.io/apimachinery/pkg/util/intstr"
 	"k8s.io/utils/ptr"
 
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
 func newBackendObjectIR(in ir.BackendObjectIR) ir.BackendObjectIR {
@@ -1208,7 +1209,7 @@ func TestEndpoints(t *testing.T) {
 			g := NewWithT(t)
 			mock := krttest.NewMock(t, tc.inputs)
 			nodes := NewNodeMetadataCollection(krttest.GetMockCollection[*corev1.Node](mock))
-			pods := NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtutil.KrtOptions{})
+			pods := NewLocalityPodsCollection(nodes, krttest.GetMockCollection[*corev1.Pod](mock), krtinternal.KrtOptions{})
 			pods.WaitUntilSynced(context.Background().Done())
 			endpointSettings := EndpointsSettings{
 				EnableAutoMtls: false,
@@ -1218,7 +1219,7 @@ func TestEndpoints(t *testing.T) {
 			endpointSlices := krttest.GetMockCollection[*discoveryv1.EndpointSlice](mock)
 
 			// Initialize the EndpointSlicesByService index
-			endpointSlicesByService := krtutil.UnnamedIndex(endpointSlices, func(es *discoveryv1.EndpointSlice) []types.NamespacedName {
+			endpointSlicesByService := krtpkg.UnnamedIndex(endpointSlices, func(es *discoveryv1.EndpointSlice) []types.NamespacedName {
 				svcName, ok := es.Labels[discoveryv1.LabelServiceName]
 				if !ok {
 					return nil

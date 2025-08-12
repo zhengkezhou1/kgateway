@@ -45,7 +45,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
+	krtinternal "github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/agentgateway/translator"
 	kgwversioned "github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned"
@@ -53,6 +53,7 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
+	krtpkg "github.com/kgateway-dev/kgateway/v2/pkg/utils/krtutil"
 )
 
 var logger = logging.New("agentgateway/syncer")
@@ -305,7 +306,7 @@ type Inputs struct {
 	Backends *krtcollections.BackendIndex
 }
 
-func (s *AgentGwSyncer) Init(krtopts krtutil.KrtOptions) {
+func (s *AgentGwSyncer) Init(krtopts krtinternal.KrtOptions) {
 	logger.Debug("init agentgateway Syncer", "controllername", s.controllerName)
 
 	s.translator.Init()
@@ -355,7 +356,7 @@ func (s *AgentGwSyncer) setupInferenceExtensionClient() {
 	}
 }
 
-func (s *AgentGwSyncer) buildInputCollections(krtopts krtutil.KrtOptions) Inputs {
+func (s *AgentGwSyncer) buildInputCollections(krtopts krtinternal.KrtOptions) Inputs {
 	inputs := Inputs{
 		Namespaces: krt.NewInformer[*corev1.Namespace](s.client),
 		Secrets: krt.WrapClient[*corev1.Secret](
@@ -395,7 +396,7 @@ func (s *AgentGwSyncer) buildInputCollections(krtopts krtutil.KrtOptions) Inputs
 	return inputs
 }
 
-func (s *AgentGwSyncer) buildResourceCollections(inputs Inputs, finalBackends krt.Collection[ir.BackendObjectIR], krtopts krtutil.KrtOptions) {
+func (s *AgentGwSyncer) buildResourceCollections(inputs Inputs, finalBackends krt.Collection[ir.BackendObjectIR], krtopts krtinternal.KrtOptions) {
 	// Build core collections for irs
 	gatewayClasses := GatewayClassesCollection(inputs.GatewayClasses, krtopts)
 	refGrants := BuildReferenceGrants(ReferenceGrantsCollection(inputs.ReferenceGrants, krtopts))
@@ -424,7 +425,7 @@ func (s *AgentGwSyncer) buildGatewayCollection(
 	inputs Inputs,
 	gatewayClasses krt.Collection[GatewayClass],
 	refGrants ReferenceGrants,
-	krtopts krtutil.KrtOptions,
+	krtopts krtinternal.KrtOptions,
 ) krt.Collection[GatewayListener] {
 	return GatewayCollection(
 		s.agentGatewayClassName,
@@ -441,10 +442,10 @@ func (s *AgentGwSyncer) buildADPResources(
 	gateways krt.Collection[GatewayListener],
 	inputs Inputs,
 	refGrants ReferenceGrants,
-	krtopts krtutil.KrtOptions,
+	krtopts krtinternal.KrtOptions,
 ) krt.Collection[ADPResourcesForGateway] {
 	// Build ports and binds
-	ports := krtutil.UnnamedIndex(gateways, func(l GatewayListener) []string {
+	ports := krtpkg.UnnamedIndex(gateways, func(l GatewayListener) []string {
 		return []string{fmt.Sprint(l.parentInfo.Port)}
 	}).AsCollection(krtopts.ToOptions("PortBindings")...)
 
@@ -570,7 +571,7 @@ func (s *AgentGwSyncer) buildBackendFromBackendIR(ctx krt.HandlerContext, backen
 }
 
 // newADPBackendCollection creates the ADP backend collection for agent gateway resources
-func (s *AgentGwSyncer) newADPBackendCollection(inputs Inputs, finalBackends krt.Collection[ir.BackendObjectIR], krtopts krtutil.KrtOptions) krt.Collection[envoyResourceWithCustomName] {
+func (s *AgentGwSyncer) newADPBackendCollection(inputs Inputs, finalBackends krt.Collection[ir.BackendObjectIR], krtopts krtinternal.KrtOptions) krt.Collection[envoyResourceWithCustomName] {
 	backends := krt.NewManyCollection(finalBackends, func(ctx krt.HandlerContext, backendIR ir.BackendObjectIR) []envoyResourceWithCustomName {
 		if backendIR.Group == wellknown.ServiceGVK.Group && backendIR.Kind == wellknown.ServiceGVK.Kind {
 			return nil
@@ -584,7 +585,7 @@ func (s *AgentGwSyncer) newADPBackendCollection(inputs Inputs, finalBackends krt
 // buildBackendCollections builds the filtered backend IR collection and the corresponding ADP backend collection
 func (s *AgentGwSyncer) buildBackendCollections(
 	inputs Inputs,
-	krtopts krtutil.KrtOptions,
+	krtopts krtinternal.KrtOptions,
 ) (krt.Collection[ir.BackendObjectIR], krt.Collection[envoyResourceWithCustomName]) {
 	// Get all backends with attached policies, filtering out Service backends
 	// Agent gateway handles Service references directly in routes and doesn't need separate backend objects
@@ -634,7 +635,7 @@ func (s *AgentGwSyncer) getProtocolAndTLSConfig(obj GatewayListener) (api.Protoc
 	}
 }
 
-func (s *AgentGwSyncer) buildAddressCollections(inputs Inputs, krtopts krtutil.KrtOptions) krt.Collection[envoyResourceWithCustomName] {
+func (s *AgentGwSyncer) buildAddressCollections(inputs Inputs, krtopts krtinternal.KrtOptions) krt.Collection[envoyResourceWithCustomName] {
 	// Build endpoint slices and namespaces
 	epSliceClient := kclient.NewFiltered[*discoveryv1.EndpointSlice](
 		s.commonCols.Client,
@@ -707,7 +708,7 @@ func (s *AgentGwSyncer) buildXDSCollection(
 	adpResources krt.Collection[ADPResourcesForGateway],
 	adpBackends krt.Collection[envoyResourceWithCustomName],
 	xdsAddresses krt.Collection[envoyResourceWithCustomName],
-	krtopts krtutil.KrtOptions,
+	krtopts krtinternal.KrtOptions,
 ) {
 	// Create an index on adpResources by Gateway to avoid fetching all resources
 	adpResourcesByGateway := krt.NewIndex(adpResources, "gateway", func(resource ADPResourcesForGateway) []types.NamespacedName {
