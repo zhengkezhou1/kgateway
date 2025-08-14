@@ -49,6 +49,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.AwsAuthApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AwsBackend"):
 		return &apiv1alpha1.AwsBackendApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("AWSGuardrailConfig"):
+		return &apiv1alpha1.AWSGuardrailConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AwsLambda"):
 		return &apiv1alpha1.AwsLambdaApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("AzureOpenAIConfig"):
@@ -65,6 +67,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.BackendStatusApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("BackoffStrategy"):
 		return &apiv1alpha1.BackoffStrategyApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("BedrockConfig"):
+		return &apiv1alpha1.BedrockConfigApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("BodyTransformation"):
 		return &apiv1alpha1.BodyTransformationApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Buffer"):
@@ -201,6 +205,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.LocalPolicyTargetReferenceWithSectionNameApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LocalPolicyTargetSelector"):
 		return &apiv1alpha1.LocalPolicyTargetSelectorApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("LocalPolicyTargetSelectorWithSectionName"):
+		return &apiv1alpha1.LocalPolicyTargetSelectorWithSectionNameApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("LocalRateLimitPolicy"):
 		return &apiv1alpha1.LocalRateLimitPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("MCP"):
@@ -267,6 +273,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.ResourceDetectorApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("ResponseFlagFilter"):
 		return &apiv1alpha1.ResponseFlagFilterApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Retry"):
+		return &apiv1alpha1.RetryApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("RetryPolicy"):
 		return &apiv1alpha1.RetryPolicyApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("Sampler"):
@@ -295,6 +303,8 @@ func ForKind(kind schema.GroupVersionKind) interface{} {
 		return &apiv1alpha1.SupportedLLMProviderApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("TCPKeepalive"):
 		return &apiv1alpha1.TCPKeepaliveApplyConfiguration{}
+	case v1alpha1.SchemeGroupVersion.WithKind("Timeouts"):
+		return &apiv1alpha1.TimeoutsApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("TLS"):
 		return &apiv1alpha1.TLSApplyConfiguration{}
 	case v1alpha1.SchemeGroupVersion.WithKind("TLSFiles"):

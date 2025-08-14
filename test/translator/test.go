@@ -39,12 +39,12 @@ import (
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/irtranslator"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/translator/listener"
-	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/utils/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/pkg/client/clientset/versioned/fake"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk"
 	common "github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/collections"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/krtutil"
 	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/reporter"
 	"github.com/kgateway-dev/kgateway/v2/pkg/reports"
 	"github.com/kgateway-dev/kgateway/v2/pkg/schemes"
@@ -266,6 +266,7 @@ func TestTranslationWithExtraPlugins(
 		if err := os.MkdirAll(dir, 0o755); err != nil {
 			r.NoErrorf(err, "error creating directory %s", dir)
 		}
+		t.Log("REFRESH_GOLDEN is set, writing output file", outputFile)
 		os.WriteFile(outputFile, outputYaml, 0o644)
 	}
 
@@ -514,7 +515,7 @@ func (tc TestCase) Run(
 	r := require.New(t)
 
 	for _, file := range tc.InputFiles {
-		objs, err := LoadFromFiles(ctx, file, scheme)
+		objs, err := LoadFromFiles(file, scheme)
 		if err != nil {
 			return nil, err
 		}

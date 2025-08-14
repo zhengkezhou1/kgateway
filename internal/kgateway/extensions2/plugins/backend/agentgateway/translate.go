@@ -1,8 +1,10 @@
 package agentgatewaybackend
 
 import (
+	"errors"
 	"fmt"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/agentgateway/agentgateway/go/api"
 	wrappers "google.golang.org/protobuf/types/known/wrapperspb"
@@ -10,10 +12,13 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/labels"
+	"k8s.io/utils/ptr"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/pluginutils"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
+	"github.com/kgateway-dev/kgateway/v2/pkg/pluginsdk/ir"
 	"github.com/kgateway-dev/kgateway/v2/pkg/utils/kubeutils"
 )
 
@@ -141,6 +146,34 @@ func buildAIIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, secrets *krtcoll
 			},
 		}
 		auth = buildTranslatedAuthPolicy(krtctx, &llm.Provider.VertexAI.AuthToken, secrets, be.Namespace)
+	} else if llm.Provider.Bedrock != nil {
+		model := &wrappers.StringValue{
+			Value: llm.Provider.Bedrock.Model,
+		}
+		region := llm.Provider.Bedrock.Region
+		var guardrailIdentifier, guardrailVersion *wrappers.StringValue
+		if llm.Provider.Bedrock.Guardrail != nil {
+			guardrailIdentifier = &wrappers.StringValue{
+				Value: llm.Provider.Bedrock.Guardrail.GuardrailIdentifier,
+			}
+			guardrailVersion = &wrappers.StringValue{
+				Value: llm.Provider.Bedrock.Guardrail.GuardrailVersion,
+			}
+		}
+
+		aiBackend.Provider = &api.AIBackend_Bedrock_{
+			Bedrock: &api.AIBackend_Bedrock{
+				Model:               model,
+				Region:              region,
+				GuardrailIdentifier: guardrailIdentifier,
+				GuardrailVersion:    guardrailVersion,
+			},
+		}
+		var err error
+		auth, err = buildBedrockAuthPolicy(krtctx, region, llm.Provider.Bedrock.Auth, secrets, be.Namespace)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		return nil, fmt.Errorf("no supported LLM provider configured")
 	}
@@ -148,8 +181,7 @@ func buildAIIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, secrets *krtcoll
 	return &AIIr{
 		Backend:    aiBackend,
 		AuthPolicy: auth,
-		// TODO check if this is correct
-		Name: be.Namespace + "/" + be.Name,
+		Name:       be.Namespace + "/" + be.Name,
 	}, nil
 }
 
@@ -169,17 +201,16 @@ func buildTranslatedAuthPolicy(krtctx krt.HandlerContext, authToken *v1alpha1.Si
 		secret, err := pluginutils.GetSecretIr(secrets, krtctx, authToken.SecretRef.Name, namespace)
 		if err != nil {
 			// Return nil auth policy if secret not found - this will be handled upstream
+			// TODO(npolshak): Add backend status errors https://github.com/kgateway-dev/kgateway/issues/11966
 			return nil
 		}
 
 		// Extract the authorization key from the secret data
 		authKey := ""
-		if secret.Data != nil {
-			if val, ok := secret.Data["Authorization"]; ok {
-				// Strip the "Bearer " prefix if present, as it will be added by the provider
-				authValue := strings.TrimSpace(string(val))
-				authKey = strings.TrimSpace(strings.TrimPrefix(authValue, "Bearer "))
-			}
+		if authValue, exists := getSecretValue(secret, "Authorization"); exists {
+			// Strip the "Bearer " prefix if present, as it will be added by the provider
+			authValue = strings.TrimSpace(authValue)
+			authKey = strings.TrimSpace(strings.TrimPrefix(authValue, "Bearer "))
 		}
 
 		if authKey == "" {
@@ -202,7 +233,9 @@ func buildTranslatedAuthPolicy(krtctx krt.HandlerContext, authToken *v1alpha1.Si
 		}
 	case v1alpha1.Passthrough:
 		return &api.BackendAuthPolicy{
-			Kind: &api.BackendAuthPolicy_Passthrough{},
+			Kind: &api.BackendAuthPolicy_Passthrough{
+				Passthrough: &api.Passthrough{},
+			},
 		}
 	default:
 		return nil
@@ -268,7 +301,16 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 		// Handle service selectors
 		if targetSelector.Selectors != nil {
 			// Build filters for service discovery
-			var filters []krt.FetchOption
+			// Krt only allows 1 filter per type, so we build a composite filter here
+			generic := func(svc any) bool {
+				return true
+			}
+			addFilter := func(nf func(svc any) bool) {
+				og := generic
+				generic = func(svc any) bool {
+					return nf(svc) && og(svc)
+				}
+			}
 
 			// Apply service label selector
 			if targetSelector.Selectors.ServiceSelector != nil {
@@ -277,10 +319,10 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 					return nil, fmt.Errorf("invalid service selector: %w", err)
 				}
 				if !serviceSelector.Empty() {
-					filters = append(filters, krt.FilterGeneric(func(obj any) bool {
+					addFilter(func(obj any) bool {
 						service := obj.(*corev1.Service)
 						return serviceSelector.Matches(labels.Set(service.Labels))
-					}))
+					})
 				}
 			}
 
@@ -300,21 +342,21 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 						}
 					}
 					// Filter services to only those in matching namespaces
-					filters = append(filters, krt.FilterGeneric(func(obj any) bool {
+					addFilter(func(obj any) bool {
 						service := obj.(*corev1.Service)
 						return matchingNamespaces[service.Namespace]
-					}))
+					})
 				}
 			} else {
 				// If no namespace selector, limit to same namespace as backend
-				filters = append(filters, krt.FilterGeneric(func(obj any) bool {
+				addFilter(func(obj any) bool {
 					service := obj.(*corev1.Service)
 					return service.Namespace == be.Namespace
-				}))
+				})
 			}
 
 			// Fetch matching services
-			matchingServices := krt.Fetch(krtctx, services, filters...)
+			matchingServices := krt.Fetch(krtctx, services, krt.FilterGeneric(generic))
 
 			// Create MCP targets for each matching service
 			for _, service := range matchingServices {
@@ -372,4 +414,85 @@ func buildMCPIr(krtctx krt.HandlerContext, be *v1alpha1.Backend, services krt.Co
 		Backends:         backends,
 		ServiceEndpoints: serviceEndpoints,
 	}, nil
+}
+
+// getSecretValue extracts a value from a Kubernetes secret, handling both Data and StringData fields.
+// It prioritizes StringData over Data if both are present.
+func getSecretValue(secret *ir.Secret, key string) (string, bool) {
+	if value, exists := secret.Data[key]; exists && utf8.Valid(value) {
+		return strings.TrimSpace(string(value)), true
+	}
+
+	return "", false
+}
+
+func buildBedrockAuthPolicy(krtctx krt.HandlerContext, region string, auth *v1alpha1.AwsAuth, secrets *krtcollections.SecretIndex, namespace string) (*api.BackendAuthPolicy, error) {
+	var errs []error
+	if auth == nil {
+		logger.Warn("using implicit AWS auth for AI backend")
+		return &api.BackendAuthPolicy{
+			Kind: &api.BackendAuthPolicy_Aws{
+				Aws: &api.Aws{
+					Kind: &api.Aws_Implicit{
+						Implicit: &api.AwsImplicit{},
+					},
+				},
+			},
+		}, nil
+	}
+
+	switch auth.Type {
+	case v1alpha1.AwsAuthTypeSecret:
+		if auth.SecretRef == nil {
+			return nil, nil
+		}
+
+		// Get secret using the SecretIndex
+		secret, err := pluginutils.GetSecretIr(secrets, krtctx, auth.SecretRef.Name, namespace)
+		if err != nil {
+			// Return nil auth policy if secret not found - this will be handled upstream
+			// TODO(npolshak): Add backend status errors https://github.com/kgateway-dev/kgateway/issues/11966
+			return nil, err
+		}
+
+		var accessKeyId, secretAccessKey string
+		var sessionToken *string
+
+		// Extract access key
+		if value, exists := getSecretValue(secret, wellknown.AccessKey); !exists {
+			errs = append(errs, errors.New("accessKey is missing or not a valid string"))
+		} else {
+			accessKeyId = value
+		}
+
+		// Extract secret key
+		if value, exists := getSecretValue(secret, wellknown.SecretKey); !exists {
+			errs = append(errs, errors.New("secretKey is missing or not a valid string"))
+		} else {
+			secretAccessKey = value
+		}
+
+		// Extract session token (optional)
+		if value, exists := getSecretValue(secret, wellknown.SessionToken); exists {
+			sessionToken = ptr.To(value)
+		}
+
+		return &api.BackendAuthPolicy{
+			Kind: &api.BackendAuthPolicy_Aws{
+				Aws: &api.Aws{
+					Kind: &api.Aws_ExplicitConfig{
+						ExplicitConfig: &api.AwsExplicitConfig{
+							AccessKeyId:     accessKeyId,
+							SecretAccessKey: secretAccessKey,
+							SessionToken:    sessionToken,
+							Region:          region,
+						},
+					},
+				},
+			},
+		}, errors.Join(errs...)
+	default:
+		errs = append(errs, errors.New("unknown AWS auth type"))
+		return nil, errors.Join(errs...)
+	}
 }
