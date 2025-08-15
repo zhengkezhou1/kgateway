@@ -11,12 +11,12 @@ spec:
         - name: ai-monitoring
           containerPort: 9092
       tracing:
-        endpoint: "http://my-otel-collector.svc.cluster.local:4317"
+        endpoint: "http://otel-collector.ai-test:4317"
         sampler:
-          type: "traceidratio"
-          arg: "0.5"
-        timeout: "100s"
-        protocol: "grpc"
+          type: "alwaysOn"
+        #   arg: "0.5"
+        # timeout: "100s"
+        # protocol: "grpc"
       env:
         - name: LOG_LEVEL
           value: DEBUG
