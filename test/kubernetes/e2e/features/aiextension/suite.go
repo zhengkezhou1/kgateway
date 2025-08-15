@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/stretchr/testify/assert"
@@ -14,8 +15,12 @@ import (
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/types"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
+	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
+	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
+	defaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
@@ -55,7 +60,7 @@ func NewSuite(
 
 func (s *tsuite) SetupSuite() {
 	s.manifests = map[string][]string{
-		"TestTracing":                 {tracingManifest},
+		"TestTracing":                 {defaults.CurlPodManifest, otelCollectorManifest, tracingManifest, backendPassthroughManifest, routesBasicManifest},
 		"TestRouting":                 {commonManifest, backendManifest, routesBasicManifest},
 		"TestRoutingPassthrough":      {commonManifest, backendPassthroughManifest, routesBasicManifest},
 		"TestRoutingOverrideProvider": {commonManifest, backendPassthroughManifest, routesBasicManifest},
@@ -108,7 +113,6 @@ func (s *tsuite) AfterTest(suiteName, testName string) {
 	}
 }
 
-// TODO: Test that spans generated after traffic passes through the AI extension are correctly sent to the backend storage (Tempo).
 func (s *tsuite) TestTracing() {
 	tracingConfig := &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -127,6 +131,145 @@ func (s *tsuite) TestTracing() {
 		)
 		assert.NoErrorf(c, err, "failed to get configMap %s/%s", tracingConfig.Namespace, tracingConfig.Name)
 	}, 30*time.Second, 1*time.Second)
+
+	s.waitForOTelCollectorReady()
+
+	err := s.testInst.Actions.Kubectl().ApplyFile(s.ctx, tracingPolicyManifest)
+	s.Require().NoError(err)
+
+	s.testOTelRequestSpan()
+}
+
+func (s *tsuite) waitForOTelCollectorReady() {
+	otelCollectorPod := &corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "otel-collector",
+			Namespace: s.testInst.Metadata.InstallNamespace,
+		},
+	}
+
+	s.testInst.Assertions.EventuallyObjectsExist(s.ctx, otelCollectorPod)
+
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+		err := s.testInst.ClusterContext.Client.Get(
+			s.ctx,
+			types.NamespacedName{Name: otelCollectorPod.Name, Namespace: otelCollectorPod.Namespace},
+			otelCollectorPod,
+		)
+		assert.NoErrorf(c, err, "failed to get pod %s/%s", otelCollectorPod.Namespace, otelCollectorPod.Name)
+
+		// 检查 Pod 是否处于 Running 状态
+		assert.Equalf(c, corev1.PodRunning, otelCollectorPod.Status.Phase,
+			"pod %s/%s is not running, current phase: %s",
+			otelCollectorPod.Namespace, otelCollectorPod.Name, otelCollectorPod.Status.Phase)
+
+		// 检查 otel-collector 容器是否正在运行且就绪
+		otelCollectorFound := false
+		for _, containerStatus := range otelCollectorPod.Status.ContainerStatuses {
+			if containerStatus.Name == "otel-collector" {
+				otelCollectorFound = true
+
+				// 检查容器是否在运行
+				assert.NotNilf(c, containerStatus.State.Running,
+					"otel-collector container is not running, current state: %+v",
+					containerStatus.State)
+
+				// 检查容器是否就绪
+				assert.Truef(c, containerStatus.Ready,
+					"otel-collector container is not ready")
+
+				break
+			}
+		}
+
+		assert.Truef(c, otelCollectorFound,
+			"otel-collector container not found in pod %s/%s",
+			otelCollectorPod.Namespace, otelCollectorPod.Name)
+	}, 60*time.Second, 2*time.Second)
+}
+
+func (s *tsuite) testOTelRequestSpan() {
+	s.testInst.Assertions.EventuallyHTTPListenerPolicyCondition(s.ctx, "tracing-policy", s.installNamespace, gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
+
+	s.testInst.Assertions.AssertEventualCurlResponse(
+		s.ctx,
+		defaults.CurlPodExecOpt,
+		[]curl.Option{
+			curl.WithHost(s.getGatewayIP()),
+			curl.WithPort(int(s.getGatewayPort())),
+			curl.WithHeader("Authorization", "Bearer passthrough-openai-key"),
+			curl.WithPath("/openai"),
+			curl.WithBody(s.getOpenAIChatRequestPayload()),
+		},
+		&matchers.HttpResponse{
+			StatusCode: http.StatusOK,
+		},
+		20*time.Second,
+		2*time.Second,
+	)
+
+	requestSpanLogs := []string{
+		`gen_ai.request generate_content gpt-4o-mini`,
+		`-> gen_ai.output.type: Str(text)`,
+		`-> gen_ai.request.choice.count: Int(2)`,
+		`-> gen_ai.request.model: Str(gpt-4o-mini)`,
+		`-> gen_ai.request.seed: Int(12345)`,
+		`-> gen_ai.request.frequency_penalty: Double(0.5)`,
+		`-> gen_ai.request.max_tokens: Int(150)`,
+		`-> gen_ai.request.presence_penalty: Double(0.3)`,
+		`-> gen_ai.request.stop_sequences: Slice([\"\\n\\n\",\"END\"])`,
+		`-> gen_ai.request.temperature: Double(0.7)`,
+		`-> gen_ai.request.top_k: Int(0)`,
+		`-> gen_ai.request.top_p: Double(0.9)`,
+		`-> gen_ai.operation.name: Str(generate_content)`,
+		`-> gen_ai.system: Str(openai)`,
+	}
+
+	// fetch the collector pod logs
+	s.Require().EventuallyWithT(func(c *assert.CollectT) {
+		logs, err := s.testInst.Actions.Kubectl().GetContainerLogs(s.ctx, s.testInst.Metadata.InstallNamespace, "otel-collector")
+		s.Require().NoError(err)
+
+		fmt.Printf("%s", logs)
+
+		allMatched := true
+		var missedMsgs []string
+		for _, log := range requestSpanLogs {
+			if !strings.Contains(logs, log) {
+				allMatched = false
+				missedMsgs = append(missedMsgs, log)
+			}
+		}
+
+		s.Assertions.True(allMatched, fmt.Sprintf("miss excpeted logs: %s", missedMsgs))
+	}, 60*time.Second, 2*time.Second)
+}
+
+// 更具描述性的实现函数，返回发送给 AI gateway / OpenAI 的请求体
+func (s *tsuite) getOpenAIChatRequestPayload() string {
+	return `
+	{
+		"model": "gpt-4o-mini",
+		"messages": [
+			{
+				"role": "system",
+				"content": "You are a poetic assistant, skilled in explaining complex programming concepts with creative flair."
+			},
+			{
+				"role": "user",
+				"content": "Compose a poem that explains the concept of recursion in programming."
+			}
+		],
+		"response_format": {"type": "text"},
+		"n": 2,
+		"seed": 12345,
+		"frequency_penalty": 0.5,
+		"max_tokens": 150,
+		"presence_penalty": 0.3,
+		"stop": ["\n\n", "END"],
+		"temperature": 0.7,
+		"top_p": 0.9
+	}`
 }
 
 func (s *tsuite) TestRouting() {
@@ -207,7 +350,8 @@ func (s *tsuite) invokePytest(test string, extraEnv ...string) {
 	s.T().Logf("Test output: %s", string(out))
 }
 
-func (s *tsuite) getGatewayURL() string {
+// getGatewayService 获取 ai-gateway 服务对象，等待其就绪并返回
+func (s *tsuite) getGatewayService() *corev1.Service {
 	svc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      "ai-gateway",
@@ -228,5 +372,20 @@ func (s *tsuite) getGatewayURL() string {
 		assert.Greaterf(c, len(svc.Status.LoadBalancer.Ingress), 0, "LB IP not found on service %s/%s", svc.Namespace, svc.Name)
 	}, 10*time.Second, 1*time.Second)
 
+	return svc
+}
+
+func (s *tsuite) getGatewayURL() string {
+	svc := s.getGatewayService()
 	return fmt.Sprintf("http://%s:%d", svc.Status.LoadBalancer.Ingress[0].IP, svc.Spec.Ports[0].Port)
+}
+
+func (s *tsuite) getGatewayIP() string {
+	svc := s.getGatewayService()
+	return svc.Status.LoadBalancer.Ingress[0].IP
+}
+
+func (s *tsuite) getGatewayPort() int32 {
+	svc := s.getGatewayService()
+	return svc.Spec.Ports[0].Port
 }
