@@ -158,23 +158,23 @@ func (s *tsuite) waitForOTelCollectorReady() {
 		)
 		assert.NoErrorf(c, err, "failed to get pod %s/%s", otelCollectorPod.Namespace, otelCollectorPod.Name)
 
-		// 检查 Pod 是否处于 Running 状态
+		// Check if the Pod is in Running state
 		assert.Equalf(c, corev1.PodRunning, otelCollectorPod.Status.Phase,
 			"pod %s/%s is not running, current phase: %s",
 			otelCollectorPod.Namespace, otelCollectorPod.Name, otelCollectorPod.Status.Phase)
 
-		// 检查 otel-collector 容器是否正在运行且就绪
+		// Check if the otel-collector container is running and ready
 		otelCollectorFound := false
 		for _, containerStatus := range otelCollectorPod.Status.ContainerStatuses {
 			if containerStatus.Name == "otel-collector" {
 				otelCollectorFound = true
 
-				// 检查容器是否在运行
+				// Check if the container is running
 				assert.NotNilf(c, containerStatus.State.Running,
 					"otel-collector container is not running, current state: %+v",
 					containerStatus.State)
 
-				// 检查容器是否就绪
+				// Check if the container is ready
 				assert.Truef(c, containerStatus.Ready,
 					"otel-collector container is not ready")
 
@@ -208,6 +208,8 @@ func (s *tsuite) testOTelRequestSpan() {
 		2*time.Second,
 	)
 
+	// {"level":"info","ts":"2025-08-18T10:32:36.011Z","msg":"ResourceSpans #0\nResource SchemaURL: \nResource attributes:\n     -> telemetry.sdk.language: Str(python)\n     -> telemetry.sdk.name: Str(opentelemetry)\n     -> telemetry.sdk.version: Str(1.35.0)\n     -> service.name: Str(kgateway-ai-extension)\nScopeSpans #0\nScopeSpans SchemaURL: \nInstrumentationScope telemetry.tracing \nSpan #0\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : ebab791fbe9bccaf\n    ID             : e4baff58f44eebe3\n    Name           : parse_config\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.177490154 +0000 UTC\n    End time       : 2025-08-18 10:32:34.177528917 +0000 UTC\n    Status code    : Unset\n    Status message : \nSpan #1\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : 104c310bb827fee9\n    ID             : ebab791fbe9bccaf\n    Name           : handle_request_headers\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.177233032 +0000 UTC\n    End time       : 2025-08-18 10:32:34.178327305 +0000 UTC\n    Status code    : Unset\n    Status message : \nSpan #2\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : ec8a665ea29a0d01\n    ID             : 2d43f5108d2c76ce\n    Name           : gen_ai.request generate_content gpt-4o-mini\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.17893748 +0000 UTC\n    End time       : 2025-08-18 10:32:34.384914245 +0000 UTC\n    Status code    : Ok\n    Status message : \nAttributes:\n     -> gen_ai.output.type: Str(text)\n     -> gen_ai.request.choice.count: Int(2)\n     -> gen_ai.request.model: Str(gpt-4o-mini)\n     -> gen_ai.request.seed: Int(12345)\n     -> gen_ai.request.frequency_penalty: Double(0.5)\n     -> gen_ai.request.max_tokens: Int(150)\n     -> gen_ai.request.presence_penalty: Double(0.3)\n     -> gen_ai.request.stop_sequences: Slice([\"\\n\\n\",\"END\"])\n     -> gen_ai.request.temperature: Double(0.7)\n     -> gen_ai.request.top_k: Int(0)\n     -> gen_ai.request.top_p: Double(0.9)\n     -> gen_ai.operation.name: Str(generate_content)\n     -> gen_ai.system: Str(openai)\nSpan #3\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : 104c310bb827fee9\n    ID             : ec8a665ea29a0d01\n    Name           : handle_request_body\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.178627899 +0000 UTC\n    End time       : 2025-08-18 10:32:34.385393273 +0000 UTC\n    Status code    : Unset\n    Status message : \nSpan #4\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : 104c310bb827fee9\n    ID             : d368a7fa273e8881\n    Name           : handle_response_headers\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.396281546 +0000 UTC\n    End time       : 2025-08-18 10:32:34.396669183 +0000 UTC\n    Status code    : Unset\n    Status message : \nSpan #5\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : 30577fc6934875d5\n    ID             : 4807c512cb668a5c\n    Name           : gen_ai.response\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.397609908 +0000 UTC\n    End time       : 2025-08-18 10:32:34.399312965 +0000 UTC\n    Status code    : Unset\n    Status message : \nAttributes:\n     -> gen_ai.response.id: Str(chatcmpl-B8Vy5kfL1Wc9LPp6K28Ot4MwDsQ83)\n     -> gen_ai.response.model: Str(gpt-4o-mini-2024-07-18)\n     -> gen_ai.response.finish_reasons: Str(stop)\n     -> gen_ai.usage.input_tokens: Int(39)\n     -> gen_ai.usage.output_tokens: Int(333)\n     -> gen_ai.operation.name: Str(generate_content)\n     -> gen_ai.system: Str(openai)\nSpan #6\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : 104c310bb827fee9\n    ID             : 30577fc6934875d5\n    Name           : handle_response_body\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.396936906 +0000 UTC\n    End time       : 2025-08-18 10:32:34.39966222 +0000 UTC\n    Status code    : Unset\n    Status message : \n","kind":"exporter","data_type":"traces","name":"debug"}
+
 	requestSpanLogs := []string{
 		`gen_ai.request generate_content gpt-4o-mini`,
 		`-> gen_ai.output.type: Str(text)`,
@@ -225,12 +227,10 @@ func (s *tsuite) testOTelRequestSpan() {
 		`-> gen_ai.system: Str(openai)`,
 	}
 
-	// fetch the collector pod logs
+	// Fetch the collector pod logs
 	s.Require().EventuallyWithT(func(c *assert.CollectT) {
 		logs, err := s.testInst.Actions.Kubectl().GetContainerLogs(s.ctx, s.testInst.Metadata.InstallNamespace, "otel-collector")
 		s.Require().NoError(err)
-
-		fmt.Printf("%s", logs)
 
 		allMatched := true
 		var missedMsgs []string
@@ -242,10 +242,10 @@ func (s *tsuite) testOTelRequestSpan() {
 		}
 
 		s.Assertions.True(allMatched, fmt.Sprintf("miss excpeted logs: %s", missedMsgs))
-	}, 60*time.Second, 2*time.Second)
+	}, 60*time.Second, 15*time.Second)
 }
 
-// 更具描述性的实现函数，返回发送给 AI gateway / OpenAI 的请求体
+// More descriptive implementation function, returns the request body sent to AI gateway / OpenAI
 func (s *tsuite) getOpenAIChatRequestPayload() string {
 	return `
 	{
@@ -350,7 +350,7 @@ func (s *tsuite) invokePytest(test string, extraEnv ...string) {
 	s.T().Logf("Test output: %s", string(out))
 }
 
-// getGatewayService 获取 ai-gateway 服务对象，等待其就绪并返回
+// getGatewayService gets the ai-gateway Service object, waits for it to be ready, and returns it
 func (s *tsuite) getGatewayService() *corev1.Service {
 	svc := &corev1.Service{
 		ObjectMeta: metav1.ObjectMeta{
