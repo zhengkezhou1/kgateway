@@ -12,8 +12,6 @@ var (
 
 	tracingManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tracing.yaml")
 
-	tracingPolicyManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "tracing-policy.yaml")
-
 	// OTel Collector setup manifest
 	otelCollectorManifest = filepath.Join(fsutils.MustGetThisDir(), "testdata", "otel-collector.yaml")
 
