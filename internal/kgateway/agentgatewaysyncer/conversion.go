@@ -1019,6 +1019,7 @@ func buildListener(
 	l gwv1.Listener,
 	listenerIndex int,
 	controllerName gwv1.GatewayController,
+	attachedRoutes int32,
 ) (*istio.Server, *TLSInfo, bool) {
 	listenerConditions := map[string]*condition{
 		string(gwv1.ListenerConditionAccepted): {
@@ -1071,7 +1072,7 @@ func buildListener(
 		Tls:   tls,
 	}
 
-	reportListenerCondition(listenerIndex, l, obj, status, listenerConditions)
+	reportListenerCondition(listenerIndex, l, obj, status, listenerConditions, attachedRoutes)
 	return server, tlsInfo, ok
 }
 

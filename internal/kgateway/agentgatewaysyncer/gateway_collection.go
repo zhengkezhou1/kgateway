@@ -216,7 +216,12 @@ func GatewayCollection(
 		}
 
 		for i, l := range kgw.Listeners {
-			server, tlsInfo, programmed := buildListener(ctx, secrets, grants, namespaces, obj, status, l, i, controllerName)
+			// Attached routes count starts at 0 and gets updated later in the status syncer
+			// when the real count is available after route processing
+			attachedCount := int32(0) // Default to 0 if not found
+
+			server, tlsInfo, programmed := buildListener(ctx, secrets, grants, namespaces, obj, status, l, i, controllerName, attachedCount)
+
 			lstatus := status.Listeners[i]
 
 			// Generate supported kinds for the listener
