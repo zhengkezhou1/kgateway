@@ -190,77 +190,95 @@ func (s *tsuite) testOTelSpan() {
 	// Wait until the tracing policy is accepted by the Gateway
 	s.testInst.Assertions.EventuallyHTTPListenerPolicyCondition(s.ctx, "tracing-policy", s.installNamespace, gwv1.GatewayConditionAccepted, metav1.ConditionTrue)
 
-	// Send a test request to the AI gateway process spans logs.
-	s.testInst.Assertions.AssertEventualCurlResponse(
-		s.ctx,
-		defaults.CurlPodExecOpt,
-		[]curl.Option{
-			curl.WithHost(s.getGatewayIP()),
-			curl.WithPort(int(s.getGatewayPort())),
-			curl.WithHeader("Authorization", "Bearer passthrough-openai-key"),
-			curl.WithPath("/openai"),
-			curl.WithBody(s.getOpenAIChatRequestPayload()),
+	var mockLLMProviders = []struct {
+		name         string
+		auth         []string
+		path         string
+		body         string
+		exceptedLogs [][]string
+	}{
+		{
+			name: "openai",
+			auth: []string{"Authorization", "Bearer passthrough-openai-key"},
+			path: "/openai",
+			body: s.getOpenAIChatRequestPayload(),
+			// {"level":"info","ts":"2025-08-18T10:32:36.011Z","msg":"ResourceSpans #0\nResource SchemaURL: \nResource attributes:\n     -> telemetry.sdk.language: Str(python)\n     -> telemetry.sdk.name: Str(opentelemetry)\n     -> telemetry.sdk.version: Str(1.35.0)\n     -> service.name: Str(kgateway-ai-extension)\nScopeSpans #0\nScopeSpans SchemaURL: \nInstrumentationScope telemetry.tracing \nSpan #0\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : ebab791fbe9bccaf\n    ID             : e4baff58f44eebe3\n    Name           : parse_config\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.177490154 +0000 UTC\n    End time       : 2025-08-18 10:32:34.177528917 +0000 UTC\n    Status code    : Unset\n    Status message : \nSpan #1\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : 104c310bb827fee9\n    ID             : ebab791fbe9bccaf\n    Name           : handle_request_headers\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.177233032 +0000 UTC\n    End time       : 2025-08-18 10:32:34.178327305 +0000 UTC\n    Status code    : Unset\n    Status message : \nSpan #2\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : ec8a665ea29a0d01\n    ID             : 2d43f5108d2c76ce\n    Name           : gen_ai.request generate_content gpt-4o-mini\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.17893748 +0000 UTC\n    End time       : 2025-08-18 10:32:34.384914245 +0000 UTC\n    Status code    : Ok\n    Status message : \nAttributes:\n     -> gen_ai.output.type: Str(text)\n     -> gen_ai.request.choice.count: Int(2)\n     -> gen_ai.request.model: Str(gpt-4o-mini)\n     -> gen_ai.request.seed: Int(12345)\n     -> gen_ai.request.frequency_penalty: Double(0.5)\n     -> gen_ai.request.max_tokens: Int(150)\n     -> gen_ai.request.presence_penalty: Double(0.3)\n     -> gen_ai.request.stop_sequences: Slice([\"\\n\\n\",\"END\"])\n     -> gen_ai.request.temperature: Double(0.7)\n     -> gen_ai.request.top_k: Int(0)\n     -> gen_ai.request.top_p: Double(0.9)\n     -> gen_ai.operation.name: Str(generate_content)\n     -> gen_ai.system: Str(openai)\nSpan #3\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : 104c310bb827fee9\n    ID             : ec8a665ea29a0d01\n    Name           : handle_request_body\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.178627899 +0000 UTC\n    End time       : 2025-08-18 10:32:34.385393273 +0000 UTC\n    Status code    : Unset\n    Status message : \nSpan #4\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : 104c310bb827fee9\n    ID             : d368a7fa273e8881\n    Name           : handle_response_headers\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.396281546 +0000 UTC\n    End time       : 2025-08-18 10:32:34.396669183 +0000 UTC\n    Status code    : Unset\n    Status message : \nSpan #5\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : 30577fc6934875d5\n    ID             : 4807c512cb668a5c\n    Name           : gen_ai.response\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.397609908 +0000 UTC\n    End time       : 2025-08-18 10:32:34.399312965 +0000 UTC\n    Status code    : Unset\n    Status message : \nAttributes:\n     -> gen_ai.response.id: Str(chatcmpl-B8Vy5kfL1Wc9LPp6K28Ot4MwDsQ83)\n     -> gen_ai.response.model: Str(gpt-4o-mini-2024-07-18)\n     -> gen_ai.response.finish_reasons: Str(stop)\n     -> gen_ai.usage.input_tokens: Int(39)\n     -> gen_ai.usage.output_tokens: Int(333)\n     -> gen_ai.operation.name: Str(generate_content)\n     -> gen_ai.system: Str(openai)\nSpan #6\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : 104c310bb827fee9\n    ID             : 30577fc6934875d5\n    Name           : handle_response_body\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.396936906 +0000 UTC\n    End time       : 2025-08-18 10:32:34.39966222 +0000 UTC\n    Status code    : Unset\n    Status message : \n","kind":"exporter","data_type":"traces","name":"debug"}
+			exceptedLogs: [][]string{
+				{
+					`gen_ai.request generate_content gpt-4o-mini`,
+					`-> gen_ai.output.type: Str(text)`,
+					`-> gen_ai.request.choice.count: Int(2)`,
+					`-> gen_ai.request.model: Str(gpt-4o-mini)`,
+					`-> gen_ai.request.seed: Int(12345)`,
+					`-> gen_ai.request.frequency_penalty: Double(0.5)`,
+					`-> gen_ai.request.max_tokens: Int(150)`,
+					`-> gen_ai.request.presence_penalty: Double(0.3)`,
+					`-> gen_ai.request.stop_sequences: Slice([\"\\n\\n\",\"END\"])`,
+					`-> gen_ai.request.temperature: Double(0.7)`,
+					`-> gen_ai.request.top_k: Int(0)`,
+					`-> gen_ai.request.top_p: Double(0.9)`,
+					`-> gen_ai.operation.name: Str(generate_content)`,
+					`-> gen_ai.system: Str(openai)`,
+				},
+				{
+					`gen_ai.response`,
+					`-> gen_ai.response.id: Str(chatcmpl-B8Vy5kfL1Wc9LPp6K28Ot4MwDsQ83)`,
+					`-> gen_ai.response.model: Str(gpt-4o-mini-2024-07-18)`,
+					`-> gen_ai.response.finish_reasons: Str(stop)`,
+					`-> gen_ai.usage.input_tokens: Int(39)`,
+					`-> gen_ai.usage.output_tokens: Int(333)`,
+					`-> gen_ai.operation.name: Str(generate_content)`,
+					`-> gen_ai.system: Str(openai)`,
+				},
+			},
 		},
-		&matchers.HttpResponse{
-			StatusCode: http.StatusOK,
-		},
-		20*time.Second,
-		2*time.Second,
-	)
-
-	// {"level":"info","ts":"2025-08-18T10:32:36.011Z","msg":"ResourceSpans #0\nResource SchemaURL: \nResource attributes:\n     -> telemetry.sdk.language: Str(python)\n     -> telemetry.sdk.name: Str(opentelemetry)\n     -> telemetry.sdk.version: Str(1.35.0)\n     -> service.name: Str(kgateway-ai-extension)\nScopeSpans #0\nScopeSpans SchemaURL: \nInstrumentationScope telemetry.tracing \nSpan #0\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : ebab791fbe9bccaf\n    ID             : e4baff58f44eebe3\n    Name           : parse_config\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.177490154 +0000 UTC\n    End time       : 2025-08-18 10:32:34.177528917 +0000 UTC\n    Status code    : Unset\n    Status message : \nSpan #1\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : 104c310bb827fee9\n    ID             : ebab791fbe9bccaf\n    Name           : handle_request_headers\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.177233032 +0000 UTC\n    End time       : 2025-08-18 10:32:34.178327305 +0000 UTC\n    Status code    : Unset\n    Status message : \nSpan #2\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : ec8a665ea29a0d01\n    ID             : 2d43f5108d2c76ce\n    Name           : gen_ai.request generate_content gpt-4o-mini\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.17893748 +0000 UTC\n    End time       : 2025-08-18 10:32:34.384914245 +0000 UTC\n    Status code    : Ok\n    Status message : \nAttributes:\n     -> gen_ai.output.type: Str(text)\n     -> gen_ai.request.choice.count: Int(2)\n     -> gen_ai.request.model: Str(gpt-4o-mini)\n     -> gen_ai.request.seed: Int(12345)\n     -> gen_ai.request.frequency_penalty: Double(0.5)\n     -> gen_ai.request.max_tokens: Int(150)\n     -> gen_ai.request.presence_penalty: Double(0.3)\n     -> gen_ai.request.stop_sequences: Slice([\"\\n\\n\",\"END\"])\n     -> gen_ai.request.temperature: Double(0.7)\n     -> gen_ai.request.top_k: Int(0)\n     -> gen_ai.request.top_p: Double(0.9)\n     -> gen_ai.operation.name: Str(generate_content)\n     -> gen_ai.system: Str(openai)\nSpan #3\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : 104c310bb827fee9\n    ID             : ec8a665ea29a0d01\n    Name           : handle_request_body\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.178627899 +0000 UTC\n    End time       : 2025-08-18 10:32:34.385393273 +0000 UTC\n    Status code    : Unset\n    Status message : \nSpan #4\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : 104c310bb827fee9\n    ID             : d368a7fa273e8881\n    Name           : handle_response_headers\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.396281546 +0000 UTC\n    End time       : 2025-08-18 10:32:34.396669183 +0000 UTC\n    Status code    : Unset\n    Status message : \nSpan #5\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : 30577fc6934875d5\n    ID             : 4807c512cb668a5c\n    Name           : gen_ai.response\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.397609908 +0000 UTC\n    End time       : 2025-08-18 10:32:34.399312965 +0000 UTC\n    Status code    : Unset\n    Status message : \nAttributes:\n     -> gen_ai.response.id: Str(chatcmpl-B8Vy5kfL1Wc9LPp6K28Ot4MwDsQ83)\n     -> gen_ai.response.model: Str(gpt-4o-mini-2024-07-18)\n     -> gen_ai.response.finish_reasons: Str(stop)\n     -> gen_ai.usage.input_tokens: Int(39)\n     -> gen_ai.usage.output_tokens: Int(333)\n     -> gen_ai.operation.name: Str(generate_content)\n     -> gen_ai.system: Str(openai)\nSpan #6\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : 104c310bb827fee9\n    ID             : 30577fc6934875d5\n    Name           : handle_response_body\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.396936906 +0000 UTC\n    End time       : 2025-08-18 10:32:34.39966222 +0000 UTC\n    Status code    : Unset\n    Status message : \n","kind":"exporter","data_type":"traces","name":"debug"}
-
-	// Expected logs for request span
-	expectedRequestSpanLogs := []string{
-		`gen_ai.request generate_content gpt-4o-mini`,
-		`-> gen_ai.output.type: Str(text)`,
-		`-> gen_ai.request.choice.count: Int(2)`,
-		`-> gen_ai.request.model: Str(gpt-4o-mini)`,
-		`-> gen_ai.request.seed: Int(12345)`,
-		`-> gen_ai.request.frequency_penalty: Double(0.5)`,
-		`-> gen_ai.request.max_tokens: Int(150)`,
-		`-> gen_ai.request.presence_penalty: Double(0.3)`,
-		`-> gen_ai.request.stop_sequences: Slice([\"\\n\\n\",\"END\"])`,
-		`-> gen_ai.request.temperature: Double(0.7)`,
-		`-> gen_ai.request.top_k: Int(0)`,
-		`-> gen_ai.request.top_p: Double(0.9)`,
-		`-> gen_ai.operation.name: Str(generate_content)`,
-		`-> gen_ai.system: Str(openai)`,
 	}
 
-	// Expected logs for response span
-	expectedResponseSpanLogs := []string{
-		`gen_ai.response`,
-		`-> gen_ai.response.id: Str(chatcmpl-B8Vy5kfL1Wc9LPp6K28Ot4MwDsQ83)`,
-		`-> gen_ai.response.model: Str(gpt-4o-mini-2024-07-18)`,
-		`-> gen_ai.response.finish_reasons: Str(stop)`,
-		`-> gen_ai.usage.input_tokens: Int(39)`,
-		`-> gen_ai.usage.output_tokens: Int(333)`,
-		`-> gen_ai.operation.name: Str(generate_content)`,
-		`-> gen_ai.system: Str(openai)`,
+	for _, provider := range mockLLMProviders {
+		// Send a test request to the AI gateway and verify HTTP response.
+		// This triggers the OTel span generation in the backend.
+		s.testInst.Assertions.AssertEventualCurlResponse(
+			s.ctx,
+			defaults.CurlPodExecOpt,
+			[]curl.Option{
+				curl.WithHost(s.getGatewayIP()),
+				curl.WithPort(int(s.getGatewayPort())),
+				curl.WithHeader(provider.auth[0], provider.auth[1]),
+				curl.WithPath(provider.path),
+				curl.WithBody(s.getOpenAIChatRequestPayload()),
+			},
+			&matchers.HttpResponse{
+				StatusCode: http.StatusOK,
+			},
+			20*time.Second,
+			2*time.Second,
+		)
+
+		// Periodically fetch OTel collector pod logs and check for expected span logs.
+		// This ensures that the spans are actually exported and visible in the logs.
+		s.Require().EventuallyWithT(func(c *assert.CollectT) {
+			logs, err := s.testInst.Actions.Kubectl().GetContainerLogs(s.ctx, s.testInst.Metadata.InstallNamespace, "otel-collector")
+			s.Require().NoError(err)
+			for _, expectedSpan := range provider.exceptedLogs {
+				s.assertSpanLogsPresent(logs, expectedSpan)
+			}
+		}, 60*time.Second, 15*time.Second)
 	}
-
-	// Periodically fetch OTel collector pod logs and check for expected span logs
-	s.Require().EventuallyWithT(func(c *assert.CollectT) {
-		logs, err := s.testInst.Actions.Kubectl().GetContainerLogs(s.ctx, s.testInst.Metadata.InstallNamespace, "otel-collector")
-		s.Require().NoError(err)
-
-		s.assertSpanLogsPresent(logs, expectedRequestSpanLogs)
-		s.assertSpanLogsPresent(logs, expectedResponseSpanLogs)
-	}, 60*time.Second, 15*time.Second)
 }
 
-// assertSpanLogsPresent checks if all expected span log entries are present in the OTel collector logs
-func (s *tsuite) assertSpanLogsPresent(actualOTelLogs string, expectedSpanLogs []string) {
-	allMatched := true
-	var missedMsgs []string
-	for _, expectedLog := range expectedSpanLogs {
-		if !strings.Contains(actualOTelLogs, expectedLog) {
-			allMatched = false
-			missedMsgs = append(missedMsgs, expectedLog)
+// assertSpanLogsPresent checks if all expected span log entries are present in the OTel collector logs.
+// If any expected log is missing, the test will fail and print the missing entries.
+func (s *tsuite) assertSpanLogsPresent(otelLogs string, expectedSpanEntries []string) {
+	allPresent := true
+	var missingEntries []string
+	for _, entry := range expectedSpanEntries {
+		if !strings.Contains(otelLogs, entry) {
+			allPresent = false
+			missingEntries = append(missingEntries, entry)
 		}
 	}
-	s.Assertions.True(allMatched, fmt.Sprintf("missing expected logs: %s", missedMsgs))
+	// Fail the test if any expected log entry is missing, and print missing entries for debugging
+	s.Assertions.True(allPresent, fmt.Sprintf("OTel span logs missing: %v", missingEntries))
 }
 
 // More descriptive implementation function, returns the request body sent to AI gateway / OpenAI
