@@ -1766,6 +1766,9 @@ var schemaYAML = typed.YAMLObject(`types:
       type:
         namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.CommonAccessLogGrpcService
       default: {}
+    - name: resourceAttributes
+      type:
+        namedType: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.KeyAnyValueList
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.OpenTelemetryTracingConfig
   map:
     fields:
@@ -1785,7 +1788,6 @@ var schemaYAML = typed.YAMLObject(`types:
     - name: serviceName
       type:
         scalar: string
-      default: ""
 - name: com.github.kgateway-dev.kgateway.v2.api.v1alpha1.Parameters
   map:
     fields:

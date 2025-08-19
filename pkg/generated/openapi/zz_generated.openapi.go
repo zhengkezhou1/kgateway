@@ -5411,6 +5411,12 @@ func schema_kgateway_v2_api_v1alpha1_OpenTelemetryAccessLogService(ref common.Re
 							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.KeyAnyValueList"),
 						},
 					},
+					"resourceAttributes": {
+						SchemaProps: spec.SchemaProps{
+							Description: "Additional resource attributes that describe the resource. If the `service.name` resource attribute is not specified, it adds it with the default value of the envoy cluster name, ie: `<gateway-name>.<gateway-namespace>`",
+							Ref:         ref("github.com/kgateway-dev/kgateway/v2/api/v1alpha1.KeyAnyValueList"),
+						},
+					},
 				},
 				Required: []string{"grpcService"},
 			},
@@ -5436,8 +5442,7 @@ func schema_kgateway_v2_api_v1alpha1_OpenTelemetryTracingConfig(ref common.Refer
 					},
 					"serviceName": {
 						SchemaProps: spec.SchemaProps{
-							Description: "The name for the service. This will be populated in the ResourceSpan Resource attributes",
-							Default:     "",
+							Description: "The name for the service. This will be populated in the ResourceSpan Resource attributes Defaults to the envoy cluster name. Ie: `<gateway-name>.<gateway-namespace>`",
 							Type:        []string{"string"},
 							Format:      "",
 						},
@@ -5463,7 +5468,7 @@ func schema_kgateway_v2_api_v1alpha1_OpenTelemetryTracingConfig(ref common.Refer
 						},
 					},
 				},
-				Required: []string{"grpcService", "serviceName"},
+				Required: []string{"grpcService"},
 			},
 		},
 		Dependencies: []string{
