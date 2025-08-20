@@ -565,6 +565,62 @@ spec:
 				"spec.timeouts.streamIdle: Invalid value: \"string\": invalid duration value",
 			},
 		},
+		{
+			name: "ProxyDeployment: enforce ExactlyOneOf for replicas and omitReplicas",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-proxy-deployment
+spec:
+  kube:
+    deployment:
+      replicas: 3
+      omitReplicas: true
+`,
+			wantErrors: []string{"at most one of the fields in [replicas omitReplicas] may be set"},
+		},
+		{
+			name: "ProxyDeployment: neither replicas nor omitReplicas set (should pass)",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-proxy-deployment-empty
+spec:
+  kube:
+    deployment: {}
+`,
+			wantErrors: []string{},
+		},
+		{
+			name: "ProxyDeployment: only replicas set (should pass)",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-proxy-deployment-replicas-only
+spec:
+  kube:
+    deployment:
+      replicas: 3
+`,
+			wantErrors: []string{},
+		},
+		{
+			name: "ProxyDeployment: only omitReplicas set (should pass)",
+			input: `---
+apiVersion: gateway.kgateway.dev/v1alpha1
+kind: GatewayParameters
+metadata:
+  name: test-proxy-deployment-omit-only
+spec:
+  kube:
+    deployment:
+      omitReplicas: true
+`,
+			wantErrors: []string{},
+		},
 	}
 
 	t.Cleanup(func() {
