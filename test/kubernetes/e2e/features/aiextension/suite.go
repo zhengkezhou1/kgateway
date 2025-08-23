@@ -18,7 +18,6 @@ import (
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
-	defaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
 )
 
@@ -58,7 +57,7 @@ func NewSuite(
 
 func (s *tsuite) SetupSuite() {
 	s.manifests = map[string][]string{
-		"TestTracing":                 {defaults.CurlPodManifest, otelCollectorManifest, tracingManifest, backendManifest, routesBasicManifest},
+		"TestTracing":                 {otelCollectorManifest, tracingManifest, backendManifest, routesBasicManifest},
 		"TestRouting":                 {commonManifest, backendManifest, routesBasicManifest},
 		"TestRoutingPassthrough":      {commonManifest, backendPassthroughManifest, routesBasicManifest},
 		"TestRoutingOverrideProvider": {commonManifest, backendPassthroughManifest, routesBasicManifest},
