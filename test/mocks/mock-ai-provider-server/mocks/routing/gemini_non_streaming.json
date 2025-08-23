@@ -1,47 +1,30 @@
 {
-    "candidates": [
-      {
-        "content": {
-          "parts": [
-            {
-              "text": "A function, a call, a mirrored embrace,\nRecursion, a dance in a finite space.\nA puzzle within, a loop in disguise,\nUnraveling layers, before your own eyes.\n\nA problem so large, it seems hard to solve,\nBut break it in pieces, a smaller evolve.\nEach piece a reflection, a call to its kin,\nA recursive journey, where the answer begins.\n\nA base case defines, the end of the road,\nWhere recursion halts, the solution bestowed.\nLike fractals, it branches, a pattern so deep,\nFrom a single call, a whole picture to keep.\n\nFrom Fibonacci's sequence, to trees in the code,\nRecursion unfolds, a story that's told.\nA power to conquer, a logic so neat,\nA symphony of calls, a beautiful feat.\n\nSo embrace the recursion, a powerful tool,\nWith elegance and grace, it can make you feel cool.\nA problem you face, can be broken in half,\nBy recursion's embrace, it's a magical laugh."
-            }
-          ],
-          "role": "model"
-        },
-        "finishReason": "STOP",
-        "index": 0,
-        "safetyRatings": [
+  "candidates": [
+    {
+      "content": {
+        "parts": [
           {
-            "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-            "probability": "NEGLIGIBLE"
-          },
-          {
-            "category": "HARM_CATEGORY_HATE_SPEECH",
-            "probability": "NEGLIGIBLE"
-          },
-          {
-            "category": "HARM_CATEGORY_HARASSMENT",
-            "probability": "NEGLIGIBLE"
-          },
-          {
-            "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-            "probability": "NEGLIGIBLE"
+            "text": "My human, Mr. Finch, usually smells of old paper and lukewarm tea. Sometimes, when he’s been thinking particularly hard, there’s a faint whiff of burnt toast, which I find quite fascinating. But this morning, there was a new scent – a sharp tang of *worry*, mingled with the metallic tang of something new and unsettling.\n\nHe wasn't in his usual armchair, purring softly with the newspaper rustling. No. He was standing by the window, his back to me, making those low, rumbling sounds humans make when their brains are particularly active. His shoulders were hunched. A very bad sign.\n\nI stretched, a long, luxurious arch, my claws extending just so into the rug. Then, I hopped onto his desk, a forbidden but often tolerated perch. He didn't even shoo me away, which meant whatever it was, it was *serious*. My tail flicked, knocking a quill pen to the floor. He barely registered it, just sighed a puff of air that smelled of yesterday’s coffee.\n\nOn the polished mahogany, glinting under the pale morning sun, was the *thing*. Not a mouse (a pity), not a dust bunny, not even a dropped biscuit crumb. It was small, round, and gleamed with a strange, dull silver. It had two tiny holes in it, like vacant eyes. A button, perhaps? But it wasn't from any of Mr. Finch's sensible tweed coats. It smelled faintly of rain, and something metallic, and a very, very distant dog. I gave it a thorough, professional sniff.\n\nMr. Finch finally turned. His brow was furrowed like a crumpled blanket. He picked up the button with a small pair of shiny metal claws, turning it over and over. He even sniffed it – *humans* sniff things? How quaint. I’d already gathered all the pertinent olfactory data.\n\nThen came the pacing. Back and forth, back and forth across the study rug. A perfect moving target for me to weave between his ankles. I tripped him once, playfully, but he barely noticed, his eyes fixed on nothing, or everything, I couldn't tell. He muttered words like \"alibi,\" \"circumstance,\" and \"curious anomaly.\" My stomach rumbled. I wanted my salmon pate.\n\nHours passed. The sunbeam moved from the rug to the window sill, a much better napping spot. I watched him, a black silhouette against the shifting light. He consulted his big, leather-bound books, flipping pages with a sigh. He used his clacky machine (typewriter) for a while, filling the air with the comforting rhythm of its metallic song. Still, the worry-scent lingered.\n\nEventually, he stopped. He looked at the button again, then at the half-open window, then at the old, frayed curtains. A spark ignited in his usually foggy human eyes. He grabbed his big book, the one with all the maps, and started tracing lines with his finger, occasionally glancing at the window.\n\nI, being Neko, decided this was the perfect moment to fully explore the windowsill. I stretched, yawned, and then, without thinking, gave a good scratch at the old, velvet curtain. A tiny, almost invisible thread, a deep, rich blue, came loose and drifted down, landing right next to the silver button Mr. Finch had placed back on his desk.\n\nHe saw it. His eyes, usually only focused on his own swirling thoughts, darted to the thread, then to the button, then back to the thread. A strange, triumphant light entered them.\n\n\"Neko!\" he exclaimed, not in anger, but in sheer surprise. \"The curtain!\"\n\nHe carefully picked up the tiny blue thread. He examined it, then the button, then the curtain again. He pulled out his magnifying glass, making his eye look comically large.\n\n\"Wool,\" he muttered, his voice a low rumble. \"A very specific weave… the thread matches the fraying here… and the button… it’s a livery button! The gardener's uniform, of course! He must have snagged it climbing in, looking for… ah, the spare key I leave under the pot!\"\n\nHis voice trailed off, then he sat down, a strange, relieved smile spreading across his face.\n\nI didn't fully understand the connection. A thread, a button, a window, a key, a gardener. But the tension in the air, the heavy scent of worry, began to dissipate, replaced by the lighter aroma of satisfaction and, thankfully, the promise of food. He reached out and scratched me behind the ears, a vigorous, pleased scratch that made my hind leg twitch.\n\n\"You've done it again, old friend,\" he murmured, though I hadn't done anything but be a cat, occupying my rightful place and occasionally shedding.\n\nLater, he made me a special bowl of cream. He was still muttering about \"the gardener's clumsy climb\" and \"a misunderstanding about the hydrangeas,\" but his voice was light, almost melodious. The mystery was solved. And I, Neko, had contributed in the most essential way a cat can: by existing, observing, and occasionally, accidentally, providing the final, crucial piece of the puzzle.\n\nThe sun was warm. The cream was good. Another case closed, thanks to the keen eyes (and occasional accidental claw marks) of Neko. Now, for a nap."
           }
-        ]
+        ],
+        "role": "model"
+      },
+      "finishReason": "STOP",
+      "index": 0
+    }
+  ],
+  "usageMetadata": {
+    "promptTokenCount": 23,
+    "candidatesTokenCount": 1147,
+    "totalTokenCount": 2654,
+    "promptTokensDetails": [
+      {
+        "modality": "TEXT",
+        "tokenCount": 23
       }
     ],
-    "usageMetadata": {
-      "promptTokenCount": 13,
-      "candidatesTokenCount": 228,
-      "totalTokenCount": 241,
-      "promptTokensDetails": [
-        {
-          "modality": "TEXT",
-          "tokenCount": 13
-        }
-      ]
-    },
-    "modelVersion": "gemini-1.5-flash-001"
-  }
-  
+    "thoughtsTokenCount": 1484
+  },
+  "modelVersion": "gemini-2.5-flash",
+  "responseId": "36upaPXnGuemmtkPs4jh0A4"
+}

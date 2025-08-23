@@ -17,8 +17,6 @@ import (
 	"k8s.io/apimachinery/pkg/types"
 	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 
-	"github.com/kgateway-dev/kgateway/v2/pkg/utils/requestutils/curl"
-	"github.com/kgateway-dev/kgateway/v2/test/gomega/matchers"
 	"github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e"
 	defaults "github.com/kgateway-dev/kgateway/v2/test/kubernetes/e2e/defaults"
 	"github.com/kgateway-dev/kgateway/v2/test/testutils"
@@ -60,7 +58,7 @@ func NewSuite(
 
 func (s *tsuite) SetupSuite() {
 	s.manifests = map[string][]string{
-		"TestTracing":                 {defaults.CurlPodManifest, otelCollectorManifest, tracingManifest, backendPassthroughManifest, routesBasicManifest},
+		"TestTracing":                 {defaults.CurlPodManifest, otelCollectorManifest, tracingManifest, backendManifest, routesBasicManifest},
 		"TestRouting":                 {commonManifest, backendManifest, routesBasicManifest},
 		"TestRoutingPassthrough":      {commonManifest, backendPassthroughManifest, routesBasicManifest},
 		"TestRoutingOverrideProvider": {commonManifest, backendPassthroughManifest, routesBasicManifest},
@@ -192,20 +190,13 @@ func (s *tsuite) testOTelSpan() {
 
 	var mockLLMProviders = []struct {
 		name         string
-		auth         []string
-		path         string
-		body         string
 		exceptedLogs [][]string
 	}{
 		{
-			name: "openai",
-			auth: []string{"Authorization", "Bearer passthrough-openai-key"},
-			path: "/openai",
-			body: s.getOpenAIChatRequestPayload(),
-			// {"level":"info","ts":"2025-08-18T10:32:36.011Z","msg":"ResourceSpans #0\nResource SchemaURL: \nResource attributes:\n     -> telemetry.sdk.language: Str(python)\n     -> telemetry.sdk.name: Str(opentelemetry)\n     -> telemetry.sdk.version: Str(1.35.0)\n     -> service.name: Str(kgateway-ai-extension)\nScopeSpans #0\nScopeSpans SchemaURL: \nInstrumentationScope telemetry.tracing \nSpan #0\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : ebab791fbe9bccaf\n    ID             : e4baff58f44eebe3\n    Name           : parse_config\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.177490154 +0000 UTC\n    End time       : 2025-08-18 10:32:34.177528917 +0000 UTC\n    Status code    : Unset\n    Status message : \nSpan #1\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : 104c310bb827fee9\n    ID             : ebab791fbe9bccaf\n    Name           : handle_request_headers\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.177233032 +0000 UTC\n    End time       : 2025-08-18 10:32:34.178327305 +0000 UTC\n    Status code    : Unset\n    Status message : \nSpan #2\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : ec8a665ea29a0d01\n    ID             : 2d43f5108d2c76ce\n    Name           : gen_ai.request generate_content gpt-4o-mini\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.17893748 +0000 UTC\n    End time       : 2025-08-18 10:32:34.384914245 +0000 UTC\n    Status code    : Ok\n    Status message : \nAttributes:\n     -> gen_ai.output.type: Str(text)\n     -> gen_ai.request.choice.count: Int(2)\n     -> gen_ai.request.model: Str(gpt-4o-mini)\n     -> gen_ai.request.seed: Int(12345)\n     -> gen_ai.request.frequency_penalty: Double(0.5)\n     -> gen_ai.request.max_tokens: Int(150)\n     -> gen_ai.request.presence_penalty: Double(0.3)\n     -> gen_ai.request.stop_sequences: Slice([\"\\n\\n\",\"END\"])\n     -> gen_ai.request.temperature: Double(0.7)\n     -> gen_ai.request.top_k: Int(0)\n     -> gen_ai.request.top_p: Double(0.9)\n     -> gen_ai.operation.name: Str(generate_content)\n     -> gen_ai.system: Str(openai)\nSpan #3\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : 104c310bb827fee9\n    ID             : ec8a665ea29a0d01\n    Name           : handle_request_body\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.178627899 +0000 UTC\n    End time       : 2025-08-18 10:32:34.385393273 +0000 UTC\n    Status code    : Unset\n    Status message : \nSpan #4\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : 104c310bb827fee9\n    ID             : d368a7fa273e8881\n    Name           : handle_response_headers\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.396281546 +0000 UTC\n    End time       : 2025-08-18 10:32:34.396669183 +0000 UTC\n    Status code    : Unset\n    Status message : \nSpan #5\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : 30577fc6934875d5\n    ID             : 4807c512cb668a5c\n    Name           : gen_ai.response\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.397609908 +0000 UTC\n    End time       : 2025-08-18 10:32:34.399312965 +0000 UTC\n    Status code    : Unset\n    Status message : \nAttributes:\n     -> gen_ai.response.id: Str(chatcmpl-B8Vy5kfL1Wc9LPp6K28Ot4MwDsQ83)\n     -> gen_ai.response.model: Str(gpt-4o-mini-2024-07-18)\n     -> gen_ai.response.finish_reasons: Str(stop)\n     -> gen_ai.usage.input_tokens: Int(39)\n     -> gen_ai.usage.output_tokens: Int(333)\n     -> gen_ai.operation.name: Str(generate_content)\n     -> gen_ai.system: Str(openai)\nSpan #6\n    Trace ID       : 5e0724091ed15094c1f74b08e7f5ecda\n    Parent ID      : 104c310bb827fee9\n    ID             : 30577fc6934875d5\n    Name           : handle_response_body\n    Kind           : Internal\n    Start time     : 2025-08-18 10:32:34.396936906 +0000 UTC\n    End time       : 2025-08-18 10:32:34.39966222 +0000 UTC\n    Status code    : Unset\n    Status message : \n","kind":"exporter","data_type":"traces","name":"debug"}
+			name: "route request to openai provider",
 			exceptedLogs: [][]string{
 				{
-					`gen_ai.request generate_content gpt-4o-mini`,
+					`gen_ai.request chat gpt-4o-mini`,
 					`-> gen_ai.output.type: Str(text)`,
 					`-> gen_ai.request.choice.count: Int(2)`,
 					`-> gen_ai.request.model: Str(gpt-4o-mini)`,
@@ -217,7 +208,7 @@ func (s *tsuite) testOTelSpan() {
 					`-> gen_ai.request.temperature: Double(0.7)`,
 					`-> gen_ai.request.top_k: Int(0)`,
 					`-> gen_ai.request.top_p: Double(0.9)`,
-					`-> gen_ai.operation.name: Str(generate_content)`,
+					`-> gen_ai.operation.name: Str(chat)`,
 					`-> gen_ai.system: Str(openai)`,
 				},
 				{
@@ -227,8 +218,38 @@ func (s *tsuite) testOTelSpan() {
 					`-> gen_ai.response.finish_reasons: Str(stop)`,
 					`-> gen_ai.usage.input_tokens: Int(39)`,
 					`-> gen_ai.usage.output_tokens: Int(333)`,
-					`-> gen_ai.operation.name: Str(generate_content)`,
+					`-> gen_ai.operation.name: Str(chat)`,
 					`-> gen_ai.system: Str(openai)`,
+				},
+			},
+		},
+		{
+			name: "route request to gemini provider",
+			exceptedLogs: [][]string{
+				{
+					`gen_ai.request generate_content gemini-2.5-flash`,
+					`-> gen_ai.operation.name: Str(generate_content)`,
+					`-> gen_ai.system: Str(gcp.gemini)`,
+					// `-> gen_ai.request.choice.count: Int(1)`,
+					// `-> gen_ai.request.model: Str(gemini-2.5-flash)`,
+					// `-> gen_ai.request.stop_sequences: Slice([\"THE END\",\"end of story.\"])`,
+					// `-> gen_ai.output.type: Str(TEXT)`,
+					// `-> gen_ai.request.max_tokens: Int(150)`,
+					// `-> gen_ai.request.temperature: Double(0.9)`,
+					// `-> gen_ai.request.top_k: Int(40)`,
+					// `-> gen_ai.request.top_p: Double(0.9)`,
+					// `-> gen_ai.request.frequency_penalty: Double(0.5)`,
+					// `-> gen_ai.request.presence_penalty: Double(0.3)`,
+				},
+				{
+					`gen_ai.response`,
+					`-> gen_ai.system: Str(gcp.gemini)`,
+					`-> gen_ai.operation.name: Str(generate_content)`,
+					// `-> gen_ai.response.model: Str(gemini-2.5-flash)`,
+					// `-> gen_ai.response.id: Str(tYmZaMTQLcayqtsP_rq7gQs)`,
+					// `-> gen_ai.response.finish_reasons: Str(STOP)`,
+					// `-> gen_ai.usage.input_tokens: Int(23)`,
+					// `-> gen_ai.usage.output_tokens: Int(1147)`,
 				},
 			},
 		},
@@ -237,22 +258,7 @@ func (s *tsuite) testOTelSpan() {
 	for _, provider := range mockLLMProviders {
 		// Send a test request to the AI gateway and verify HTTP response.
 		// This triggers the OTel span generation in the backend.
-		s.testInst.Assertions.AssertEventualCurlResponse(
-			s.ctx,
-			defaults.CurlPodExecOpt,
-			[]curl.Option{
-				curl.WithHost(s.getGatewayIP()),
-				curl.WithPort(int(s.getGatewayPort())),
-				curl.WithHeader(provider.auth[0], provider.auth[1]),
-				curl.WithPath(provider.path),
-				curl.WithBody(s.getOpenAIChatRequestPayload()),
-			},
-			&matchers.HttpResponse{
-				StatusCode: http.StatusOK,
-			},
-			20*time.Second,
-			2*time.Second,
-		)
+		s.invokePytest("tracing.py")
 
 		// Periodically fetch OTel collector pod logs and check for expected span logs.
 		// This ensures that the spans are actually exported and visible in the logs.
@@ -279,33 +285,6 @@ func (s *tsuite) assertSpanLogsPresent(otelLogs string, expectedSpanEntries []st
 	}
 	// Fail the test if any expected log entry is missing, and print missing entries for debugging
 	s.Assertions.True(allPresent, fmt.Sprintf("OTel span logs missing: %v", missingEntries))
-}
-
-// More descriptive implementation function, returns the request body sent to AI gateway / OpenAI
-func (s *tsuite) getOpenAIChatRequestPayload() string {
-	return `
-	{
-		"model": "gpt-4o-mini",
-		"messages": [
-			{
-				"role": "system",
-				"content": "You are a poetic assistant, skilled in explaining complex programming concepts with creative flair."
-			},
-			{
-				"role": "user",
-				"content": "Compose a poem that explains the concept of recursion in programming."
-			}
-		],
-		"response_format": {"type": "text"},
-		"n": 2,
-		"seed": 12345,
-		"frequency_penalty": 0.5,
-		"max_tokens": 150,
-		"presence_penalty": 0.3,
-		"stop": ["\n\n", "END"],
-		"temperature": 0.7,
-		"top_p": 0.9
-	}`
 }
 
 func (s *tsuite) TestRouting() {
@@ -414,14 +393,4 @@ func (s *tsuite) getGatewayService() *corev1.Service {
 func (s *tsuite) getGatewayURL() string {
 	svc := s.getGatewayService()
 	return fmt.Sprintf("http://%s:%d", svc.Status.LoadBalancer.Ingress[0].IP, svc.Spec.Ports[0].Port)
-}
-
-func (s *tsuite) getGatewayIP() string {
-	svc := s.getGatewayService()
-	return svc.Status.LoadBalancer.Ingress[0].IP
-}
-
-func (s *tsuite) getGatewayPort() int32 {
-	svc := s.getGatewayService()
-	return svc.Spec.Ports[0].Port
 }

@@ -66,7 +66,7 @@ class LLMClient:
         client_options={"api_endpoint": TEST_GEMINI_BASE_URL},
         transport="rest",
     )
-    gemini_client = genai.GenerativeModel("gemini-1.5-flash-001")
+    gemini_client = genai.GenerativeModel("gemini-2.5-flash")
 
     vertexai.init(
         project="kgateway-project",

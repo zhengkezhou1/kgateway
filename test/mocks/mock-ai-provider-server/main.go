@@ -26,8 +26,9 @@ type MockResponse struct {
 }
 
 var mockData = map[string]MockResponse{
-	//Tracing:
+	// Tracing:
 	"3d18473ed73d4debe50f5e02fe5441f95387a92af63184ad552dc378e3f02487": {FilePath: "mocks/routing/openai_non_streaming.txt.gz", IsGzip: true},
+	"785357921ca1a35d110976419907b077601f796d662210d7edaff133b6872ced": {FilePath: "mocks/routing/gemini_non_streaming.json", IsGzip: false}, // Tracing gemini test
 	// Non streaming:
 	"793764f12a5e331ae08cecab749a022c23867d03c9db18cf00fc4dd1dc89f132": {FilePath: "mocks/routing/azure_non_streaming.json", IsGzip: false},
 	"dfb4094b64f15e250490d4f6f8a3163c840b4cff09f0c282d41765f0a1d8a7f5": {FilePath: "mocks/routing/openai_non_streaming.txt.gz", IsGzip: true},
@@ -96,6 +97,10 @@ func generateSSEStream(c *gin.Context, filePath, provider string) {
 }
 
 func handleModelResponse(c *gin.Context, requestData map[string]interface{}, provider string, stream bool) {
+	fmt.Printf("=== handleModelResponse called with provider: %s, stream: %v ===\n", provider, stream)
+	fmt.Printf("Request path: %s\n", c.Request.URL.Path)
+	fmt.Printf("Request method: %s\n", c.Request.Method)
+
 	hash := getJSONHash(requestData, provider, stream)
 	fmt.Printf("data: %v, hash: %s\n", requestData, hash)
 
@@ -117,6 +122,12 @@ func handleModelResponse(c *gin.Context, requestData map[string]interface{}, pro
 
 func main() {
 	r := gin.Default()
+
+	// Add middleware to log all requests
+	r.Use(func(c *gin.Context) {
+		fmt.Printf("REQUEST: %s %s\n", c.Request.Method, c.Request.URL.Path)
+		c.Next()
+	})
 
 	// Health check endpoint
 	r.GET("/", func(c *gin.Context) {
@@ -194,6 +205,8 @@ func main() {
 
 	// Gemini endpoints
 	r.POST("/v1beta/models/:modelaction", func(c *gin.Context) {
+		fmt.Printf("Gemini route matched! modelaction param: %s\n", c.Param("modelaction"))
+		fmt.Printf("Full path: %s\n", c.Request.URL.Path)
 		var requestData map[string]interface{}
 		if err := c.BindJSON(&requestData); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -207,7 +220,9 @@ func main() {
 		}
 
 		modelaction := c.Param("modelaction")
+		fmt.Printf("Processing modelaction: %s\n", modelaction)
 		_, action, ok := strings.Cut(modelaction, ":")
+		fmt.Printf("After split: action=%s, ok=%v\n", action, ok)
 		if !ok {
 			c.JSON(http.StatusNotFound, gin.H{"error": "Invalid action"})
 			return
