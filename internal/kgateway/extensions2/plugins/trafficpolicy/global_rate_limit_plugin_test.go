@@ -13,9 +13,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/durationpb"
-	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/utils/ptr"
+	gwv1 "sigs.k8s.io/gateway-api/apis/v1"
 	gwv1alpha2 "sigs.k8s.io/gateway-api/apis/v1alpha2"
 
 	"github.com/kgateway-dev/kgateway/v2/api/v1alpha1"
@@ -373,6 +373,7 @@ func TestCreateRateLimitActions(t *testing.T) {
 func TestToRateLimitFilterConfig(t *testing.T) {
 	defaultExtensionName := "test-ratelimit"
 	defaultNamespace := "test-namespace"
+	typedDefaultNamespace := gwv1.Namespace(defaultNamespace)
 	defaultClusterName := "test-service.test-namespace.svc.cluster.local:8081"
 
 	createBackendRef := func() gwv1alpha2.BackendObjectReference {
@@ -409,8 +410,8 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				},
 			},
 			policy: &v1alpha1.RateLimitPolicy{
-				ExtensionRef: &corev1.LocalObjectReference{
-					Name: defaultExtensionName,
+				ExtensionRef: v1alpha1.NamespacedObjectReference{
+					Name: gwv1.ObjectName(defaultExtensionName),
 				},
 				Descriptors: []v1alpha1.RateLimitDescriptor{
 					{
@@ -442,7 +443,7 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 			},
 		},
 		{
-			name: "with custom timeout",
+			name: "with custom timeout and extensionRef specifying the namespace",
 			gatewayExtension: &ir.GatewayExtension{
 				Type: v1alpha1.GatewayExtensionTypeRateLimit,
 				RateLimit: &v1alpha1.RateLimitProvider{
@@ -460,8 +461,9 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				},
 			},
 			policy: &v1alpha1.RateLimitPolicy{
-				ExtensionRef: &corev1.LocalObjectReference{
-					Name: defaultExtensionName,
+				ExtensionRef: v1alpha1.NamespacedObjectReference{
+					Name:      gwv1.ObjectName(defaultExtensionName),
+					Namespace: &typedDefaultNamespace,
 				},
 				Descriptors: []v1alpha1.RateLimitDescriptor{
 					{
@@ -502,8 +504,8 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				},
 			},
 			policy: &v1alpha1.RateLimitPolicy{
-				ExtensionRef: &corev1.LocalObjectReference{
-					Name: defaultExtensionName,
+				ExtensionRef: v1alpha1.NamespacedObjectReference{
+					Name: gwv1.ObjectName(defaultExtensionName),
 				},
 				Descriptors: []v1alpha1.RateLimitDescriptor{
 					{
@@ -539,8 +541,8 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				},
 			},
 			policy: &v1alpha1.RateLimitPolicy{
-				ExtensionRef: &corev1.LocalObjectReference{
-					Name: defaultExtensionName,
+				ExtensionRef: v1alpha1.NamespacedObjectReference{
+					Name: gwv1.ObjectName(defaultExtensionName),
 				},
 				Descriptors: []v1alpha1.RateLimitDescriptor{
 					{
@@ -569,8 +571,8 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 				},
 			},
 			policy: &v1alpha1.RateLimitPolicy{
-				ExtensionRef: &corev1.LocalObjectReference{
-					Name: defaultExtensionName,
+				ExtensionRef: v1alpha1.NamespacedObjectReference{
+					Name: gwv1.ObjectName(defaultExtensionName),
 				},
 				Descriptors: []v1alpha1.RateLimitDescriptor{
 					{
@@ -589,26 +591,6 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 			trafficPolicy: &v1alpha1.TrafficPolicy{},
 			expectedError: "extension has type ExtProc but RateLimit was expected",
 		},
-		{
-			name: "without extension reference",
-			policy: &v1alpha1.RateLimitPolicy{
-				Descriptors: []v1alpha1.RateLimitDescriptor{
-					{
-						Entries: []v1alpha1.RateLimitDescriptorEntry{
-							{
-								Type: v1alpha1.RateLimitDescriptorEntryTypeGeneric,
-								Generic: &v1alpha1.RateLimitDescriptorEntryGeneric{
-									Key:   "service",
-									Value: "api",
-								},
-							},
-						},
-					},
-				},
-			},
-			trafficPolicy: &v1alpha1.TrafficPolicy{},
-			expectedError: "extensionRef is required",
-		},
 	}
 
 	for _, tt := range tests {
@@ -616,7 +598,7 @@ func TestToRateLimitFilterConfig(t *testing.T) {
 			var rl *ratev3.RateLimit
 			var err error
 
-			if tt.policy == nil || tt.policy.ExtensionRef == nil {
+			if tt.policy == nil {
 				err = errors.New("extensionRef is required")
 			} else if tt.gatewayExtension == nil {
 				err = fmt.Errorf("failed to get referenced GatewayExtension")

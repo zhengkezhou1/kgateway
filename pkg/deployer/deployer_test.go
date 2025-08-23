@@ -37,6 +37,7 @@ import (
 	internaldeployer "github.com/kgateway-dev/kgateway/v2/internal/kgateway/deployer"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/common"
 	extensionsplug "github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugin"
+	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/extensions2/plugins/httplistenerpolicy"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/krtcollections"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/wellknown"
 	"github.com/kgateway-dev/kgateway/v2/internal/kgateway/xds"
@@ -61,6 +62,8 @@ import (
 	// is currently broken. see: https://github.com/kgateway-dev/kgateway/issues/10491
 	_ "github.com/kgateway-dev/kgateway/v2/pkg/utils/filter_types"
 )
+
+const envoyDataKey = "envoy.yaml"
 
 func unmarshalYaml(data []byte, into proto.Message) error {
 	jsn, err := yaml.YAMLToJSON(data)
@@ -122,7 +125,7 @@ func (objs *clientObjects) findConfigMap(namespace, name string) *corev1.ConfigM
 func (objs *clientObjects) getEnvoyConfig(namespace, name string) *envoybootstrapv3.Bootstrap {
 	cm := objs.findConfigMap(namespace, name).Data
 	var bootstrapCfg envoybootstrapv3.Bootstrap
-	err := unmarshalYaml([]byte(cm["envoy.yaml"]), &bootstrapCfg)
+	err := unmarshalYaml([]byte(cm[envoyDataKey]), &bootstrapCfg)
 	ExpectWithOffset(1, err).ToNot(HaveOccurred())
 	return &bootstrapCfg
 }
@@ -249,6 +252,7 @@ var _ = Describe("Deployer", func() {
 							ExtraAnnotations: map[string]string{
 								"foo": "bar",
 							},
+							ExternalTrafficPolicy: ptr.To(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
 						},
 						ServiceAccount: &gw2_v1alpha1.ServiceAccount{
 							ExtraLabels: map[string]string{
@@ -322,6 +326,46 @@ var _ = Describe("Deployer", func() {
 									Name:  "test",
 									Value: "value",
 								},
+							},
+						},
+						PodTemplate: &gw2_v1alpha1.Pod{
+							TopologySpreadConstraints: []corev1.TopologySpreadConstraint{
+								{
+									MaxSkew:           1,
+									TopologyKey:       "kubernetes.io/hostname",
+									WhenUnsatisfiable: corev1.DoNotSchedule,
+									LabelSelector: &metav1.LabelSelector{
+										MatchLabels: map[string]string{"app": "test"},
+									},
+								},
+							},
+							Tolerations: []corev1.Toleration{
+								{
+									Key:      "test-key",
+									Operator: corev1.TolerationOpEqual,
+									Value:    "test-value",
+									Effect:   corev1.TaintEffectNoSchedule,
+								},
+							},
+							Affinity: &corev1.Affinity{
+								NodeAffinity: &corev1.NodeAffinity{
+									RequiredDuringSchedulingIgnoredDuringExecution: &corev1.NodeSelector{
+										NodeSelectorTerms: []corev1.NodeSelectorTerm{
+											{
+												MatchExpressions: []corev1.NodeSelectorRequirement{
+													{
+														Key:      "kubernetes.io/os",
+														Operator: corev1.NodeSelectorOpIn,
+														Values:   []string{"linux"},
+													},
+												},
+											},
+										},
+									},
+								},
+							},
+							NodeSelector: map[string]string{
+								"kubernetes.io/arch": "amd64",
 							},
 						},
 					},
@@ -561,7 +605,11 @@ var _ = Describe("Deployer", func() {
 			Expect(expectedSecurityContext).ToNot(BeNil())
 			Expect(expectedSecurityContext.RunAsUser).ToNot(BeNil())
 			Expect(*expectedSecurityContext.RunAsUser).To(Equal(int64(333)))
+			// check the deployment fields are correctly set
 			Expect(deployment.Spec.Template.Spec.Containers[0].Resources.Limits.Cpu().Equal(resource.MustParse("101m"))).To(BeTrue())
+			Expect(deployment.Spec.Template.Spec.TopologySpreadConstraints[0]).To(Equal(gwp.Spec.Kube.PodTemplate.TopologySpreadConstraints[0]))
+			Expect(deployment.Spec.Template.Spec.Tolerations[0]).To(Equal(gwp.Spec.Kube.PodTemplate.Tolerations[0]))
+			Expect(deployment.Spec.Template.Spec.NodeSelector).To(Equal(gwp.Spec.Kube.PodTemplate.NodeSelector))
 			// check env values are appended to the end of the list
 			var testEnvVar corev1.EnvVar
 			for _, envVar := range deployment.Spec.Template.Spec.Containers[0].Env {
@@ -1128,6 +1176,7 @@ var _ = Describe("Deployer", func() {
 								ExtraAnnotations: map[string]string{
 									"override-foo": "override-bar",
 								},
+								ExternalTrafficPolicy: ptr.To(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
 							},
 							ServiceAccount: &gw2_v1alpha1.ServiceAccount{
 								ExtraLabels: map[string]string{
@@ -1195,6 +1244,7 @@ var _ = Describe("Deployer", func() {
 									"foo":          "bar",
 									"override-foo": "override-bar",
 								},
+								ExternalTrafficPolicy: ptr.To(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
 							},
 							ServiceAccount: &gw2_v1alpha1.ServiceAccount{
 								ExtraLabels: map[string]string{
@@ -1442,6 +1492,7 @@ var _ = Describe("Deployer", func() {
 				Expect(svc.GetLabels()).To(containMapElements(expectedGwp.Service.ExtraLabels))
 				Expect(svc.Spec.Type).To(Equal(*expectedGwp.Service.Type))
 				Expect(svc.Spec.ClusterIP).To(Equal(*expectedGwp.Service.ClusterIP))
+				Expect(svc.Spec.ExternalTrafficPolicy).To(Equal(corev1.ServiceExternalTrafficPolicyTypeLocal))
 
 				sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
 				Expect(sa).ToNot(BeNil())
@@ -1452,6 +1503,8 @@ var _ = Describe("Deployer", func() {
 
 				cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 				Expect(cm).ToNot(BeNil())
+				// This verifies that the cluster name provided to envoy matches the service name used when generating OTel stats
+				Expect(cm.Data[envoyDataKey]).To(ContainSubstring(fmt.Sprintf("cluster: %s", httplistenerpolicy.GenerateDefaultServiceName(dep.Name, dep.Namespace))))
 
 				logLevelsMap := expectedGwp.EnvoyContainer.Bootstrap.ComponentLogLevels
 				levels := []types.GomegaMatcher{}
@@ -1587,6 +1640,7 @@ var _ = Describe("Deployer", func() {
 			Expect(svc.GetLabels()).To(containMapElements(expectedGwp.Service.ExtraLabels))
 			Expect(svc.Spec.Type).To(Equal(*expectedGwp.Service.Type))
 			Expect(svc.Spec.ClusterIP).To(Equal(*expectedGwp.Service.ClusterIP))
+			Expect(svc.Spec.ExternalTrafficPolicy).To(Equal(corev1.ServiceExternalTrafficPolicyTypeLocal))
 
 			sa := objs.findServiceAccount(defaultNamespace, defaultServiceAccountName)
 			Expect(sa).ToNot(BeNil())
@@ -2080,7 +2134,7 @@ var _ = Describe("Deployer", func() {
 					cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 					Expect(cm).NotTo(BeNil())
 
-					envoyYaml := cm.Data["envoy.yaml"]
+					envoyYaml := cm.Data[envoyDataKey]
 					Expect(envoyYaml).NotTo(BeEmpty())
 
 					// make sure it's valid yaml
@@ -2125,7 +2179,7 @@ var _ = Describe("Deployer", func() {
 					cm := objs.findConfigMap(defaultNamespace, defaultConfigMapName)
 					Expect(cm).NotTo(BeNil())
 
-					envoyYaml := cm.Data["envoy.yaml"]
+					envoyYaml := cm.Data[envoyDataKey]
 					Expect(envoyYaml).NotTo(BeEmpty())
 
 					// make sure it's valid yaml
@@ -2181,6 +2235,94 @@ var _ = Describe("Deployer", func() {
 			}, &expectedOutput{
 				validationFunc: func(objs clientObjects, inp *input) error {
 					Expect(objs).To(BeEmpty())
+					return nil
+				},
+			}),
+			Entry("OmitReplicas is true", &input{
+				dInputs: defaultDeployerInputs(),
+				gw:      defaultGateway(),
+				defaultGwp: &gw2_v1alpha1.GatewayParameters{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       wellknown.GatewayParametersGVK.Kind,
+						APIVersion: gw2_v1alpha1.GroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      wellknown.DefaultGatewayParametersName,
+						Namespace: defaultNamespace,
+						UID:       "1237",
+					},
+					Spec: gw2_v1alpha1.GatewayParametersSpec{
+						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+							Deployment: &gw2_v1alpha1.ProxyDeployment{
+								OmitReplicas: ptr.To(true),
+							},
+						},
+					},
+				},
+				overrideGwp: &gw2_v1alpha1.GatewayParameters{},
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) error {
+					deployment := objs.findDeployment(defaultNamespace, defaultServiceName)
+					Expect(deployment).NotTo(BeNil())
+					Expect(deployment.Spec.Replicas).To(BeNil())
+					return nil
+				},
+			}),
+			Entry("have replicas set", &input{
+				dInputs: defaultDeployerInputs(),
+				gw:      defaultGateway(),
+				defaultGwp: &gw2_v1alpha1.GatewayParameters{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       wellknown.GatewayParametersGVK.Kind,
+						APIVersion: gw2_v1alpha1.GroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      wellknown.DefaultGatewayParametersName,
+						Namespace: defaultNamespace,
+						UID:       "1237",
+					},
+					Spec: gw2_v1alpha1.GatewayParametersSpec{
+						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+							Deployment: &gw2_v1alpha1.ProxyDeployment{
+								Replicas: ptr.To(uint32(3)),
+							},
+						},
+					},
+				},
+				overrideGwp: &gw2_v1alpha1.GatewayParameters{},
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) error {
+					deployment := objs.findDeployment(defaultNamespace, defaultServiceName)
+					Expect(deployment).NotTo(BeNil())
+					Expect(*deployment.Spec.Replicas).To(Equal(int32(3)))
+					return nil
+				},
+			}),
+			Entry("replicas and omitReplicas aren't set (default)", &input{
+				dInputs: defaultDeployerInputs(),
+				gw:      defaultGateway(),
+				defaultGwp: &gw2_v1alpha1.GatewayParameters{
+					TypeMeta: metav1.TypeMeta{
+						Kind:       wellknown.GatewayParametersGVK.Kind,
+						APIVersion: gw2_v1alpha1.GroupVersion.String(),
+					},
+					ObjectMeta: metav1.ObjectMeta{
+						Name:      wellknown.DefaultGatewayParametersName,
+						Namespace: defaultNamespace,
+						UID:       "1237",
+					},
+					Spec: gw2_v1alpha1.GatewayParametersSpec{
+						Kube: &gw2_v1alpha1.KubernetesProxyConfig{
+							Deployment: &gw2_v1alpha1.ProxyDeployment{},
+						},
+					},
+				},
+				overrideGwp: &gw2_v1alpha1.GatewayParameters{},
+			}, &expectedOutput{
+				validationFunc: func(objs clientObjects, inp *input) error {
+					deployment := objs.findDeployment(defaultNamespace, defaultServiceName)
+					Expect(deployment).NotTo(BeNil())
+					Expect(*deployment.Spec.Replicas).To(Equal(int32(1))) // default replicas is 1
 					return nil
 				},
 			}),
@@ -2527,6 +2669,7 @@ func fullyDefinedGatewayParameters(name, namespace string) *gw2_v1alpha1.Gateway
 					ExtraLabels: map[string]string{
 						"service-label": "foo",
 					},
+					ExternalTrafficPolicy: ptr.To(string(corev1.ServiceExternalTrafficPolicyTypeLocal)),
 				},
 				ServiceAccount: &gw2_v1alpha1.ServiceAccount{
 					ExtraLabels: map[string]string{

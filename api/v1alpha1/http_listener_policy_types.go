@@ -104,6 +104,17 @@ type HTTPListenerPolicySpec struct {
 	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/configuration/http/http_conn_man/header_casing
 	// +optional
 	PreserveHttp1HeaderCase *bool `json:"preserveHttp1HeaderCase,omitempty"`
+
+	// AcceptHTTP10 determines whether to accept incoming HTTP/1.0 and HTTP 0.9 requests.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http1protocoloptions
+	// +optional
+	AcceptHttp10 *bool `json:"acceptHttp10,omitempty"`
+
+	// DefaultHostForHttp10 specifies a default host for HTTP/1.0 requests. This is highly suggested if acceptHttp10 is true and a no-op if acceptHttp10 is false.
+	// See here for more information: https://www.envoyproxy.io/docs/envoy/latest/api-v3/config/core/v3/protocol.proto#config-core-v3-http1protocoloptions
+	// +optional
+	// +kubebuilder:validation:MinLength=1
+	DefaultHostForHttp10 *string `json:"defaultHostForHttp10,omitempty"`
 }
 
 // AccessLog represents the top-level access log configuration.
@@ -255,6 +266,12 @@ type OpenTelemetryAccessLogService struct {
 	// Additional attributes that describe the specific event occurrence.
 	// +optional
 	Attributes *KeyAnyValueList `json:"attributes,omitempty"`
+
+	// Additional resource attributes that describe the resource.
+	// If the `service.name` resource attribute is not specified, it adds it with the default value
+	// of the envoy cluster name, ie: `<gateway-name>.<gateway-namespace>`
+	// +optional
+	ResourceAttributes *KeyAnyValueList `json:"resourceAttributes,omitempty"`
 }
 
 // A list of key-value pair that is used to store Span attributes, Link attributes, etc.
@@ -573,8 +590,9 @@ type OpenTelemetryTracingConfig struct {
 	GrpcService CommonGrpcService `json:"grpcService"`
 
 	// The name for the service. This will be populated in the ResourceSpan Resource attributes
-	// +required
-	ServiceName string `json:"serviceName"`
+	// Defaults to the envoy cluster name. Ie: `<gateway-name>.<gateway-namespace>`
+	// +optional
+	ServiceName *string `json:"serviceName"`
 
 	// An ordered list of resource detectors. Currently supported values are `EnvironmentResourceDetector`
 	// +optional
